@@ -14,6 +14,8 @@
 [Features](#-features) · [Download](#-get-it) · [Shortcuts](#%EF%B8%8F-keyboard-shortcuts) · [How it works](#-how-it-works) · [FAQ](#-faq) · [Credits](#-credits)
 
 </div>
+> [!NOTE]
+> 💛 **A huge thank you to [gtaservers.org](https://gtaservers.org/nopixel).** Their live feed, which reads every NoPixel stream's minimap and puts it on the map, is what makes this app possible. Everything here is built on top of their work. If you enjoy this, go show them some love too.
 
 ---
 
