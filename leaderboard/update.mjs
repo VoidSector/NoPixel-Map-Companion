@@ -7,7 +7,7 @@
 // in between gets half of it (at most 15 minutes). The running totals (state.json) come from the
 // published site itself, so nothing else has to be kept anywhere; the first run starts from seed.json.
 //
-// Usage: node leaderboard/update.mjs <out dir>   (writes index.html, leaderboard.json, state.json)
+// Usage: node leaderboard/update.mjs <out dir>   (writes index.html, leaderboard.json, details.json, state.json)
 import { readFile, writeFile, mkdir, copyFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -95,10 +95,13 @@ function credit(state, id, who, from, to) {
   const r = state.rows[k] ??= { s: id, n: {}, pd: false, t: 0, d: 0, ld: -1, dm: {}, hm: {} };
   r.pd ||= !!who.pd;
   r.n[who.name] = (r.n[who.name] ?? 0) + (to - from) / 60;
+  r.f = Math.min(r.f ?? from, from); r.ls = Math.max(r.ls ?? 0, to);
+  r.hd ??= new Array(24).fill(0);
   for (let a = from; a < to;) {
     const h = Math.floor(a / HOUR), b = Math.min(to, (h + 1) * HOUR), m = (b - a) / 60, d = Math.floor(a / DAY);
     r.t += m;
     r.hm[h] = (r.hm[h] ?? 0) + m;
+    r.hd[h % 24] += m;
     r.dm[d] = (r.dm[d] ?? 0) + m;
     if (d > r.ld) { r.d++; r.ld = d; }
     a = b;
@@ -106,6 +109,21 @@ function credit(state, id, who, from, to) {
 }
 
 const state = await loadState();
+// state from before hours of the day, first / last seen and the city pulse were kept: those from seed.json
+// (made from the full recorded history), once
+if ((state.v ?? 1) < 2) {
+  const seed = JSON.parse(await readFile(new URL('seed.json', HERE), 'utf8'));
+  for (const [k, r] of Object.entries(state.rows)) {
+    const x = seed.rows[k];
+    if (!x) continue;
+    if (x.hd) r.hd = x.hd.slice();
+    if (x.f) r.f = Math.min(r.f ?? x.f, x.f);
+    if (x.ls) r.ls = Math.max(r.ls ?? 0, x.ls);
+  }
+  state.pulse = seed.pulse ?? [];
+  state.restarts = seed.restarts ?? [];
+  state.v = 2;
+}
 const [{ roster, pos }, npl, wiki] = await Promise.all([snapshot(), getJson('https://nopixellink.dev/api/map'), getJson('https://wiki.gtaservers.org/nopixel-v.json')]);
 
 // the character nopixellink reports for a live streamer (NoPixel's own), spelled as the feed spells it
@@ -142,6 +160,16 @@ if (state.at) {
 }
 state.at = now;
 state.prev = nowLive;
+// the city pulse: how many were on the map at each look (placed in the last 2 minutes), the last 7 days;
+// a restart: everyone off at once (under a quarter of the half hour before, with 20+ on before)
+const onMap = roster.filter((st) => now - (pos.get(st.id)?.ts ?? 0) <= 120).length;
+state.pulse ??= []; state.restarts ??= [];
+const before30 = state.pulse.filter(([t]) => now - t <= 35 * 60).map(([, n]) => n).sort((a, b) => a - b);
+const med = before30[before30.length >> 1] ?? 0;
+if (before30.length >= 2 && med >= 20 && onMap < med * 0.25 && now - (state.restarts.at(-1) ?? 0) > 3 * HOUR) state.restarts.push(now);
+state.pulse.push([now, onMap]);
+state.pulse = state.pulse.filter(([t]) => now - t <= 7 * DAY);
+state.restarts = state.restarts.filter((t) => now - t <= 7 * DAY);
 // pictures (Twitch / Kick only)
 state.avatars ??= {};
 for (const st of roster) if (st.avatar && /^https:\/\/(static-cdn\.jtvnw\.net|files\.kick\.com)\//.test(st.avatar)) state.avatars[st.id] = st.avatar;
@@ -157,12 +185,17 @@ const groups = new Map();
 const short = shortForms(Object.values(state.rows).flatMap((r) => Object.keys(r.n).map((n) => [r.s, n])));
 for (const [key, r] of Object.entries(state.rows)) {
   const to = short.get(key) ?? key;
-  const g = groups.get(to) ?? groups.set(to, { s: r.s, n: {}, pd: false, d: 0, on: [0, 0, 0, 0] }).get(to);
+  const g = groups.get(to) ?? groups.set(to, { s: r.s, n: {}, pd: false, d: 0, on: [0, 0, 0, 0], p7: 0, dm: new Array(30).fill(0), hd: new Array(24).fill(0), f: Infinity, ls: 0 }).get(to);
   for (const [n, m] of Object.entries(r.n)) g.n[n] = (g.n[n] ?? 0) + m;
   g.pd ||= r.pd;
   g.d = Math.max(g.d, r.d);
   g.on[0] += r.t;
-  for (const [d, m] of Object.entries(r.dm)) { if (d > today - 30) g.on[1] += m; if (d > today - 7) g.on[2] += m; }
+  g.f = Math.min(g.f, r.f ?? Infinity); g.ls = Math.max(g.ls, r.ls ?? 0);
+  (r.hd ?? []).forEach((m, i) => { g.hd[i] += m; });
+  for (const [d, m] of Object.entries(r.dm)) {
+    if (d > today - 30) { g.on[1] += m; g.dm[29 - (today - d)] += m; }
+    if (d > today - 7) g.on[2] += m; else if (d > today - 14) g.p7 += m; // (the 7 days before: who's rising)
+  }
   for (const [h, m] of Object.entries(r.hm)) if (h > hourNow - 24) g.on[3] += m;
 }
 const rows = [...groups.values()].map((g) => ({ ...g, c: Object.entries(g.n).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null, on: g.on.map(Math.round) }))
@@ -172,8 +205,13 @@ const data = {
   v: 2, made: now, since: state.since, periods: ['all', '30d', '7d', '24h'],
   live: Object.entries(nowLive).filter(([id, w]) => w.city && used.has(id)).map(([id]) => id),
   avatars: Object.fromEntries(Object.entries(state.avatars).filter(([l]) => used.has(l))),
-  rows: rows.map((r) => [r.s, r.c, r.pd ? 1 : 0, r.d, r.on]),
+  // [streamer, character, police, days, [minutes: all, 30 d, 7 d, 24 h], minutes the 7 days before]
+  rows: rows.map((r) => [r.s, r.c, r.pd ? 1 : 0, r.d, r.on, Math.round(r.p7)]),
+  pulse: state.pulse.map(([t, n]) => [t, n]), restarts: state.restarts,
 };
+// a character's page (fetched when one is opened): minutes per day for the last 30 (oldest first, the last
+// is today, UTC), minutes per hour of the day (UTC, all time), first and last seen
+const details = { today, rows: Object.fromEntries(rows.map((r) => [`${r.s}|${r.c}`, { dm: r.dm.map(Math.round), hd: r.hd.map(Math.round), f: Number.isFinite(r.f) ? Math.round(r.f) : null, ls: Math.round(r.ls) || null }])) };
 // a drop means something went wrong: don't publish it over the good totals
 const before = state.made ?? 0;
 state.made = now;
@@ -183,6 +221,7 @@ state.total = data.rows.reduce((t, r) => t + r[4][0], 0);
 await mkdir(OUT, { recursive: true });
 await copyFile(new URL('index.html', HERE), new URL('index.html', OUT));
 await writeFile(new URL('leaderboard.json', OUT), JSON.stringify(data));
+await writeFile(new URL('details.json', OUT), JSON.stringify(details));
 await writeFile(new URL('state.json', OUT), JSON.stringify(state));
 await writeFile(new URL('.nojekyll', OUT), '');
 console.log(`${roster.length} live, ${data.live.length} in the city; ${data.rows.length} characters; ${Math.round(gap / 60)} min since the last look${before ? '' : ' (first run)'}`);

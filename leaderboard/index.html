@@ -57,7 +57,64 @@ ol.list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
 .more[hidden] { display: none; }
 .note { padding: 28px 10px; color: var(--muted); text-align: center; }
 footer { margin-top: 36px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--muted); display: grid; gap: 6px; }
+/* the city pulse */
+.pulse { margin-top: 22px; padding: 14px 16px 10px; border-radius: 12px; background: var(--panel); box-shadow: inset 0 0 0 1px var(--line); }
+.pulse-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; }
+.pulse-head h2 { margin: 0; font: italic 800 18px/1 var(--font-cond); text-transform: uppercase; letter-spacing: .02em; }
+.pulse-head span { font-size: 12.5px; color: var(--muted); }
+.pulse-head b { color: var(--text); font-variant-numeric: tabular-nums; }
+.pulse-chart { position: relative; margin-top: 8px; }
+.pulse-chart svg { display: block; width: 100%; height: 120px; overflow: visible; }
+.pulse-chart .area { fill: rgba(46,230,214,.16); }
+.pulse-chart .line { fill: none; stroke: var(--teal); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.pulse-chart .rs { stroke: var(--live); stroke-width: 1; stroke-dasharray: 3 3; vector-effect: non-scaling-stroke; }
+.pulse-chart .day { stroke: var(--line); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.pulse-days { position: relative; height: 16px; font-size: 11px; color: var(--muted); }
+.pulse-days span { position: absolute; top: 2px; translate: 4px 0; white-space: nowrap; }
+.pulse-tip { position: absolute; top: -6px; translate: -50% -100%; padding: 4px 8px; border-radius: 6px; background: #fff; color: #000; font-size: 12px; font-weight: 600; white-space: nowrap; pointer-events: none; }
+.pulse-tip[hidden] { display: none; }
+.pulse-cursor { position: absolute; top: 0; height: 120px; width: 1px; background: rgba(255,255,255,.5); pointer-events: none; }
+.pulse-cursor[hidden] { display: none; }
+.pulse-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 2px; font-size: 11.5px; color: var(--muted); }
+.pulse-legend i { display: inline-block; width: 14px; height: 0; margin-right: 5px; vertical-align: middle; border-top: 1px dashed var(--live); }
+/* rising */
+.up { color: var(--teal); }
+.down { color: var(--muted); }
+/* a character's page */
+.r.click { cursor: pointer; }
+dialog.ch { width: min(640px, calc(100vw - 24px)); max-height: calc(100vh - 32px); padding: 0; border: 0; border-radius: 14px; background: var(--panel); color: var(--text); box-shadow: 0 30px 80px rgba(0,0,0,.7), inset 0 0 0 1px var(--line); }
+dialog.ch::backdrop { background: rgba(0,0,0,.65); }
+.ch-in { padding: 20px 20px 18px; display: grid; gap: 18px; }
+.ch-top { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; gap: 14px; align-items: center; }
+.ch-top .av { width: 56px; height: 56px; font-size: 18px; }
+.ch-top h2 { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font: italic 800 28px/1 var(--font-cond); text-transform: uppercase; }
+.ch-top small { color: var(--muted); font-size: 13px; }
+.ch-top small a { color: inherit; cursor: pointer; text-decoration: underline; text-decoration-color: rgba(255,255,255,.25); text-underline-offset: 2px; }
+.ch-x { align-self: start; width: 34px; height: 34px; border: 0; border-radius: 50%; background: rgba(255,255,255,.08); color: var(--text); font-size: 20px; line-height: 1; cursor: pointer; }
+.ch-x:hover { background: rgba(255,255,255,.16); }
+.ch-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; }
+.ch-stats div { padding: 9px 11px; border-radius: 9px; background: rgba(255,255,255,.04); }
+.ch-stats b { display: block; font: 800 17px/1.2 var(--font-sans); font-variant-numeric: tabular-nums; }
+.ch-stats span { font-size: 11.5px; color: var(--muted); }
+.ch h3 { margin: 0 0 8px; font: italic 800 14px/1 var(--font-cond); text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.ch-days { display: grid; grid-template-columns: repeat(30, 1fr); gap: 2px; align-items: end; height: 90px; }
+.ch-days i { display: block; min-height: 2px; border-radius: 2px 2px 0 0; background: var(--teal); opacity: .85; }
+.ch-days i.zero { background: rgba(255,255,255,.08); opacity: 1; }
+.ch-days i:hover { opacity: 1; filter: brightness(1.2); }
+.ch-axis { display: flex; justify-content: space-between; margin-top: 4px; font-size: 11px; color: var(--muted); }
+.ch-hours { display: grid; grid-template-columns: repeat(24, 1fr); gap: 2px; }
+.ch-hours i { height: 26px; border-radius: 3px; background: var(--teal); }
+.ch-peak { margin: 6px 0 0; font-size: 12.5px; color: var(--muted); }
+.ch-peak b { color: var(--text); }
+.ch-others { display: flex; flex-wrap: wrap; gap: 6px; }
+.ch-others button { border: 0; padding: 5px 10px; border-radius: 999px; background: rgba(255,255,255,.07); color: var(--text); font: 600 13px/1.2 var(--font-sans); cursor: pointer; }
+.ch-others button:hover { background: rgba(255,255,255,.14); }
+.ch-others button small { color: var(--muted); font-weight: 500; }
 @media (max-width: 720px) {
+  .ch-in { padding: 16px 14px; }
+  .ch-top { grid-template-columns: 44px minmax(0, 1fr) auto; }
+  .ch-top .av { width: 44px; height: 44px; }
+  .ch-top h2 { font-size: 22px; }
   .r { grid-template-columns: 26px 32px minmax(0, 1fr) auto; gap: 9px; padding: 7px 4px; }
   .av { width: 32px; height: 32px; }
   .num { min-width: 0; max-width: 118px; }
@@ -74,6 +131,12 @@ footer { margin-top: 36px; padding-top: 16px; border-top: 1px solid var(--line);
     <p class="meta" id="meta">Loading…</p>
   </header>
 
+  <section class="pulse" aria-labelledby="pulse-h">
+    <div class="pulse-head"><h2 id="pulse-h">City pulse</h2><span id="pulse-sum"></span></div>
+    <div class="pulse-chart" id="pulse-chart"><div class="pulse-cursor" id="pulse-cursor" hidden></div><div class="pulse-tip" id="pulse-tip" hidden></div></div>
+    <div class="pulse-legend"><span>People on the map, the last 7 days</span><span><i></i>City restart</span></div>
+  </section>
+
   <div class="tools">
     <div class="row">
       <label class="search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span class="sr" hidden>Find a character or streamer</span><input id="q" type="search" placeholder="Find a character or streamer" autocomplete="off" spellcheck="false" aria-label="Find a character or streamer"></label>
@@ -81,7 +144,7 @@ footer { margin-top: 36px; padding-top: 16px; border-top: 1px solid var(--line);
     </div>
     <div class="row">
       <div class="seg" id="v" role="group" aria-label="Show"><button data-v="chars">Characters</button><button data-v="streamers">Streamers</button></div>
-      <div class="seg" id="s" role="group" aria-label="Sort by"><button data-v="on">Most time</button><button data-v="avg" title="Average per day they played">Most per day</button><button data-v="az">A–Z</button></div>
+      <div class="seg" id="s" role="group" aria-label="Sort by"><button data-v="on">Most time</button><button data-v="avg" title="Average per day they played">Most per day</button><button data-v="up" title="Most more time these 7 days than the 7 before">Rising</button><button data-v="az">A–Z</button></div>
       <div class="seg" id="f" role="group" aria-label="Who"><button data-v="all">Everyone</button><button data-v="pd">Police</button><button data-v="live">Live</button></div>
     </div>
   </div>
@@ -90,8 +153,10 @@ footer { margin-top: 36px; padding-top: 16px; border-top: 1px solid var(--line);
   <ol class="list" id="list"></ol>
   <button class="more" id="more" hidden>Show more</button>
 
+  <dialog class="ch" id="ch" aria-labelledby="ch-name"><div class="ch-in" id="ch-in"></div></dialog>
+
   <footer>
-    <span><b>Time</b>: how long they were live on stream as that character, in the city (other games and just chatting don't count). <b>Days</b>: how many days they played, all time.</span>
+    <span><b>Time</b>: how long they were live on stream as that character, in the city (other games and just chatting don't count). <b>Days</b>: how many days they played, all time. <b>Rising</b>: time these 7 days compared with the 7 days before. Times of day are in your time zone.</span>
     <span>Updated every 10 minutes from <a href="https://gtaservers.org/nopixel" rel="noopener">gtaservers.org</a>'s live NoPixel map. By <a href="https://github.com/VoidSector/NoPixel-Map-Companion" rel="noopener">NoPixel Live Map</a>. Unofficial fan project, not affiliated with NoPixel.</span>
   </footer>
 </div>
@@ -105,14 +170,14 @@ const PI = { all: 0, '30d': 1, '7d': 2, '24h': 3 };
 
 // the state, kept in the address so a view can be shared (?q=kyle&p=7d)
 const url = new URL(location.href);
-const st = { q: url.searchParams.get('q') ?? '', p: url.searchParams.get('p') ?? 'all', v: url.searchParams.get('v') ?? 'chars', s: url.searchParams.get('s') ?? 'on', f: url.searchParams.get('f') ?? 'all', shown: 100 };
+const st = { c: url.searchParams.get('c') ?? '', q: url.searchParams.get('q') ?? '', p: url.searchParams.get('p') ?? 'all', v: url.searchParams.get('v') ?? 'chars', s: url.searchParams.get('s') ?? 'on', f: url.searchParams.get('f') ?? 'all', shown: 100 };
 if (!(st.p in PI)) st.p = 'all';
-if (!['on', 'avg', 'az'].includes(st.s)) st.s = 'on';
-let D = null, live = new Set();
+if (!['on', 'avg', 'up', 'az'].includes(st.s)) st.s = 'on';
+let D = null, DT = null, live = new Set();
 
 function share() {
   const u = new URL(location.href);
-  for (const [k, def] of [['q', ''], ['p', 'all'], ['v', 'chars'], ['s', 'on'], ['f', 'all']]) { if (st[k] && st[k] !== def) u.searchParams.set(k, st[k]); else u.searchParams.delete(k); }
+  for (const [k, def] of [['q', ''], ['p', 'all'], ['v', 'chars'], ['s', 'on'], ['f', 'all'], ['c', '']]) { if (st[k] && st[k] !== def) u.searchParams.set(k, st[k]); else u.searchParams.delete(k); }
   history.replaceState(null, '', u);
 }
 function avatar(login) {
@@ -122,12 +187,12 @@ function avatar(login) {
 }
 function rows() {
   const i = PI[st.p], q = st.q.trim().toLowerCase();
-  let list = D.rows.map(([s, c, pd, d, on]) => ({ s, c, pd: !!pd, d, on: on[i], live: live.has(s) })).filter((r) => r.on > 0);
+  let list = D.rows.map(([s, c, pd, d, on, p7]) => ({ s, c, pd: !!pd, d, on: on[i], up: on[2] - (p7 ?? 0), live: live.has(s) })).filter((r) => r.on > 0);
   if (st.v === 'streamers') {
     const by = new Map();
     for (const r of list) {
-      const x = by.get(r.s) ?? by.set(r.s, { s: r.s, c: null, chars: [], pd: false, d: 0, on: 0, live: r.live }).get(r.s);
-      x.on += r.on; x.d = Math.max(x.d, r.d); x.pd ||= r.pd; x.chars.push([r.c, r.on]);
+      const x = by.get(r.s) ?? by.set(r.s, { s: r.s, c: null, chars: [], pd: false, d: 0, on: 0, up: 0, live: r.live }).get(r.s);
+      x.on += r.on; x.up += r.up; x.d = Math.max(x.d, r.d); x.pd ||= r.pd; x.chars.push([r.c, r.on]);
     }
     list = [...by.values()];
     for (const x of list) x.chars.sort((a, b) => b[1] - a[1]);
@@ -138,11 +203,14 @@ function rows() {
   const name = (r) => (r.c ?? r.s).toLowerCase();
   const perDay = (r) => r.on / Math.max(1, r.d);
   if (st.s === 'avg' && i !== 0) st.s = 'on'; // (days played are all-time: per day only makes sense there)
-  const by = { on: (a, b) => b.on - a.on, avg: (a, b) => perDay(b) - perDay(a), az: (a, b) => name(a).localeCompare(name(b)) }[st.s] ?? (() => 0);
+  if (st.s === 'up' && st.p !== '7d') st.s = 'on'; // (rising: this week against the one before)
+  const by = { on: (a, b) => b.on - a.on, avg: (a, b) => perDay(b) - perDay(a), up: (a, b) => b.up - a.up, az: (a, b) => name(a).localeCompare(name(b)) }[st.s] ?? (() => 0);
   return list.sort((a, b) => by(a, b) || name(a).localeCompare(name(b)));
 }
+const rise = (m) => (m >= 1 ? `<span class="up">+${esc(fmt(m))}</span> vs last week` : m <= -1 ? `<span class="down">−${esc(fmt(-m))}</span> vs last week` : 'same as last week');
 function render() {
   $('#s [data-v="avg"]').hidden = st.p !== 'all';
+  $('#s [data-v="up"]').hidden = st.p !== '7d';
   for (const k of ['p', 'v', 's', 'f']) for (const b of $(`#${k}`).querySelectorAll('[data-v]')) b.setAttribute('aria-pressed', String(b.dataset.v === st[k]));
   const list = rows(), i = PI[st.p];
   const label = { all: 'all time', '30d': 'the last 30 days', '7d': 'the last 7 days', '24h': 'the last 24 hours' }[st.p];
@@ -152,10 +220,10 @@ function render() {
     const sub = st.v === 'streamers'
       ? esc(r.chars.slice(0, 4).map((x) => x[0]).join(', ') + (r.chars.length > 4 ? ` +${r.chars.length - 4}` : ''))
       : `<a data-pick="${esc(r.s)}" title="All of ${esc(r.s)}'s characters">${esc(r.s)}</a>`;
-    return `<li class="r">
+    return `<li class="r${st.v === 'chars' ? ' click' : ''}"${st.v === 'chars' ? ` data-open="${esc(r.s)}|${esc(r.c)}" tabindex="0"` : ''}>
       <span class="rank">${k + 1}</span>${avatar(r.s)}
       <span class="who"><b>${esc(r.c ?? r.s)}${tags}</b><small>${sub}</small></span>
-      <span class="num"><b>${esc(fmt(r.on))}</b><small>${i === 0 ? `${r.d} day${r.d === 1 ? '' : 's'} · ${esc(fmt(Math.round(r.on / Math.max(1, r.d))))} a day` : 'on stream'}</small></span>
+      <span class="num"><b>${esc(fmt(r.on))}</b><small>${st.s === 'up' ? rise(r.up) : i === 0 ? `${r.d} day${r.d === 1 ? '' : 's'} · ${esc(fmt(Math.round(r.on / Math.max(1, r.d))))} a day` : 'on stream'}</small></span>
     </li>`;
   }).join('') || `<li class="note">Nobody matches${st.q ? ` “${esc(st.q)}”` : ''}${st.f === 'live' ? ' among those live' : ''}.</li>`;
   $('#more').hidden = list.length <= st.shown;
@@ -167,7 +235,96 @@ $('#q').value = st.q;
 let qTimer = 0;
 $('#q').addEventListener('input', () => { clearTimeout(qTimer); qTimer = setTimeout(() => { st.q = $('#q').value; st.shown = 100; render(); }, 120); });
 $('#more').addEventListener('click', () => { st.shown += 200; render(); });
+$('#list').addEventListener('click', (e) => { const o = e.target.closest('[data-open]'); if (o && !e.target.closest('[data-pick]')) openChar(o.dataset.open); });
+$('#list').addEventListener('keydown', (e) => { const o = e.target.closest('[data-open]'); if (o && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); openChar(o.dataset.open); } });
 $('#list').addEventListener('click', (e) => { const a = e.target.closest('[data-pick]'); if (!a) return; st.q = a.dataset.pick; $('#q').value = st.q; st.v = 'chars'; st.shown = 100; render(); scrollTo({ top: 0, behavior: 'smooth' }); });
+
+// ---- the city pulse: people on the map every 10 minutes, the last 7 days; restarts marked ----
+const dayFmt = new Intl.DateTimeFormat([], { weekday: 'short', day: 'numeric' });
+const timeFmt = new Intl.DateTimeFormat([], { weekday: 'short', hour: '2-digit', minute: '2-digit' });
+function pulse() {
+  const P = D.pulse ?? [], box = $('#pulse-chart');
+  box.querySelector('svg')?.remove();
+  $('#pulse-days')?.remove();
+  if (P.length < 2) { $('#pulse-sum').textContent = 'Not enough data yet.'; return; }
+  const t0 = P[0][0], t1 = P.at(-1)[0], max = Math.max(10, ...P.map((x) => x[1]));
+  const W = 1000, H = 120, X = (t) => ((t - t0) / (t1 - t0)) * W, Y = (n) => H - (n / max) * (H - 6);
+  // a gap of over half an hour (no look): the line breaks
+  let line = '', area = '', run = [];
+  const pts = (r) => r.map(([t, n]) => `${X(t).toFixed(1)},${Y(n).toFixed(1)}`).join('L');
+  const flush = () => { if (run.length > 1) { line += `M${pts(run)}`; area += `M${X(run[0][0]).toFixed(1)},${H}L${pts(run)}L${X(run.at(-1)[0]).toFixed(1)},${H}Z`; } run = []; };
+  P.forEach((x, k) => { if (k && x[0] - P[k - 1][0] > 1800) flush(); run.push(x); });
+  flush();
+  const days = [];
+  for (const d = new Date(t0 * 1000); ;) { d.setHours(24, 0, 0, 0); const t = d.getTime() / 1000; if (t >= t1) break; days.push(t); }
+  const rs = (D.restarts ?? []).filter((t) => t >= t0 && t <= t1);
+  box.insertAdjacentHTML('afterbegin', `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="People on the map over the last 7 days">
+    ${days.map((t) => `<line class="day" x1="${X(t)}" x2="${X(t)}" y1="0" y2="${H}"/>`).join('')}
+    <path class="area" d="${area}"/><path class="line" d="${line}"/>
+    ${rs.map((t) => `<line class="rs" x1="${X(t)}" x2="${X(t)}" y1="0" y2="${H}"/>`).join('')}</svg>`);
+  box.insertAdjacentHTML('afterend', `<div class="pulse-days" id="pulse-days">${days.map((t) => `<span style="left:${(X(t) / W) * 100}%">${dayFmt.format(t * 1000)}</span>`).join('')}</div>`);
+  const peak = P.reduce((a, b) => (b[1] > a[1] ? b : a));
+  $('#pulse-sum').innerHTML = `Now <b>${P.at(-1)[1]}</b> · peak <b>${peak[1]}</b> (${esc(timeFmt.format(peak[0] * 1000))}) · <b>${rs.length}</b> restart${rs.length === 1 ? '' : 's'}`;
+  box.onpointermove = (e) => {
+    const rect = box.getBoundingClientRect(), fx = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width)), t = t0 + fx * (t1 - t0);
+    const q = P.reduce((a, b) => (Math.abs(b[0] - t) < Math.abs(a[0] - t) ? b : a));
+    const x = ((q[0] - t0) / (t1 - t0)) * 100, near = rs.find((r) => Math.abs(r - q[0]) <= 900);
+    $('#pulse-cursor').hidden = false; $('#pulse-cursor').style.left = `${x}%`;
+    const tip = $('#pulse-tip');
+    tip.hidden = false; tip.style.left = `${Math.min(90, Math.max(10, x))}%`;
+    tip.textContent = `${timeFmt.format(q[0] * 1000)} · ${q[1]} on the map${near ? ' · city restart' : ''}`;
+  };
+  box.onpointerleave = () => { $('#pulse-cursor').hidden = true; $('#pulse-tip').hidden = true; };
+}
+
+// ---- a character's page: their time, the last 30 days, when they're usually on, their other characters ----
+const shortDate = new Intl.DateTimeFormat([], { day: 'numeric', month: 'short' });
+const loadDetails = () => DT ?? (DT = fetch(`details.json?t=${D.made}`).then((r) => (r.ok ? r.json() : null)).catch(() => null));
+async function openChar(key, { keep = false } = {}) {
+  const i = key.indexOf('|'), s = key.slice(0, i), c = key.slice(i + 1);
+  const row = D.rows.find((r) => r[0] === s && r[1] === c);
+  if (!row) { if (!keep) { st.c = ''; share(); } return; }
+  const [, , pd, days, on, p7 = 0] = row;
+  const rank = D.rows.indexOf(row) + 1; // (rows come busiest first, all time)
+  const others = D.rows.filter((r) => r[0] === s && r !== row);
+  st.c = key; share();
+  const det = await loadDetails(), x = det?.rows?.[key];
+  if (st.c !== key) return; // another one opened meanwhile
+  const stat = (v, l) => `<div><b>${v}</b><span>${l}</span></div>`;
+  const hh = (h) => `${String(h % 24).padStart(2, '0')}:00`;
+  let daysHtml = '<p class="ch-peak">Not available yet.</p>', hoursHtml = '';
+  if (x) {
+    // the last 30 days, oldest first (UTC days); the last is today
+    const top = Math.max(60, ...x.dm), day = (k) => (det.today - 29 + k) * 86400 * 1000;
+    daysHtml = `<div class="ch-days">${x.dm.map((m, k) => `<i class="${m ? '' : 'zero'}" style="height:${m ? Math.max(4, (m / top) * 100) : 2}%" title="${esc(shortDate.format(day(k)))}: ${m ? esc(fmt(m)) : 'not on'}"></i>`).join('')}</div>
+      <div class="ch-axis"><span>${esc(shortDate.format(day(0)))}</span><span>${esc(fmt(on[1]))} in 30 days</span><span>today</span></div>`;
+    // when they're on: hours of the day in local time (kept in UTC)
+    const off = Math.round(-new Date().getTimezoneOffset() / 60);
+    const loc = Array.from({ length: 24 }, (_, h) => x.hd[(((h - off) % 24) + 24) % 24]);
+    const hmax = Math.max(1, ...loc), sum = loc.reduce((a, b) => a + b, 0);
+    let best = 0, bestAt = 0;
+    for (let h = 0; h < 24; h++) { const w = [0, 1, 2, 3].reduce((t, k) => t + loc[(h + k) % 24], 0); if (w > best) { best = w; bestAt = h; } }
+    if (sum) hoursHtml = `<section><h3>When they're on</h3><div class="ch-hours">${loc.map((m, h) => `<i style="opacity:${(0.08 + 0.92 * (m / hmax)).toFixed(2)}" title="${hh(h)}–${hh(h + 1)}: ${Math.round((100 * m) / sum)}% of their time"></i>`).join('')}</div>
+      <div class="ch-axis"><span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>24:00</span></div>
+      <p class="ch-peak">Most often <b>${hh(bestAt)}–${hh(bestAt + 4)}</b> (${Math.round((100 * best) / sum)}% of their time)</p></section>`;
+  }
+  const wk = on[2] - p7;
+  $('#ch-in').innerHTML = `<div class="ch-top">${avatar(s)}<div><h2 id="ch-name">${esc(c)}${pd ? '<span class="tag pd">police</span>' : ''}${live.has(s) ? '<span class="tag live">live</span>' : ''}</h2>
+      <small>played by <a data-chpick="${esc(s)}">${esc(s)}</a> · #${rank.toLocaleString()} all time</small></div><button class="ch-x" type="button" aria-label="Close">×</button></div>
+    <div class="ch-stats">${stat(esc(fmt(on[0])), 'all time')}${stat(days.toLocaleString(), `day${days === 1 ? '' : 's'} played`)}${stat(esc(fmt(Math.round(on[0] / Math.max(1, days)))), 'a day they play')}${stat(esc(fmt(on[2])), `this week (${wk >= 1 ? '+' : wk <= -1 ? '−' : '±'}${esc(fmt(Math.round(Math.abs(wk))))})`)}${x?.f ? stat(esc(shortDate.format(x.f * 1000)), 'first seen') : ''}${x?.ls ? stat(live.has(s) ? 'Now' : esc(ago(x.ls)), 'last seen') : ''}</div>
+    <section><h3>The last 30 days</h3>${daysHtml}</section>
+    ${hoursHtml}
+    ${others.length ? `<section><h3>${esc(s)}'s other characters</h3><div class="ch-others">${others.slice(0, 12).map((r) => `<button type="button" data-chopen="${esc(r[0])}|${esc(r[1])}">${esc(r[1])} <small>${esc(fmt(r[4][0]))}</small></button>`).join('')}</div></section>` : ''}`;
+  if (!$('#ch').open) $('#ch').showModal();
+}
+$('#ch').addEventListener('close', () => { st.c = ''; share(); });
+$('#ch').addEventListener('click', (e) => {
+  if (e.target === $('#ch') || e.target.closest('.ch-x')) { $('#ch').close(); return; }
+  const o = e.target.closest('[data-chopen]');
+  if (o) { openChar(o.dataset.chopen, { keep: true }); return; }
+  const a = e.target.closest('[data-chpick]');
+  if (a) { $('#ch').close(); st.q = a.dataset.chpick; $('#q').value = st.q; st.v = 'chars'; st.shown = 100; render(); scrollTo({ top: 0, behavior: 'smooth' }); }
+});
 
 // the data is updated every 10 minutes: fetched again every 5 (the list keeps its place)
 function meta() {
@@ -177,9 +334,11 @@ function meta() {
 function load() {
   return fetch(`leaderboard.json?t=${Math.floor(Date.now() / 60_000)}`, { cache: 'no-cache' }).then((r) => (r.ok ? r.json() : Promise.reject(new Error(r.status)))).then((d) => {
     const fresh = !D || d.made !== D.made;
+    const first = !D;
     D = d; live = new Set(d.live ?? []);
     meta();
-    if (fresh) render();
+    if (fresh) { DT = null; render(); pulse(); if (!first && $('#ch').open && st.c) openChar(st.c, { keep: true }); }
+    if (first && st.c) openChar(st.c);
   });
 }
 load().catch(() => { $('#meta').textContent = 'The leaderboard couldn’t be loaded. Try again in a minute.'; });
