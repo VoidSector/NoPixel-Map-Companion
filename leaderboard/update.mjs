@@ -20,6 +20,7 @@ const OUT = new URL('./', pathToFileURL(resolve(process.argv[2] ?? 'site') + '/'
 const now = Math.floor(Date.now() / 1000);
 const DAY = 86400, HOUR = 3600;
 const CITY_S = 2 * HOUR;      // last placed on the map this long ago or less: in the city
+const NOPIXEL_RE = /no\s?-?pixel|\bnpv\b|\bnp\s?(v|5|5\.0)\b/i; // a title that says NoPixel
 const SAME_S = 2 * HOUR;      // live at both looks this far apart or less: live all along
 const EDGE_S = 15 * 60;       // started / stopped in between: at most this much
 const KEEP_H = 31 * 24;       // minutes per hour kept this long: the page makes its days from them, in its time zone
@@ -169,7 +170,11 @@ for (const st of roster) {
   if (!name || !st?.id) continue;
   const k = charKey(name), before = prev[st.id]?.k === k ? prev[st.id] : null;
   const fix = Math.max(pos.get(st.id)?.ts ?? 0, before?.fix ?? 0);
-  nowLive[st.id] = { k, name, pd: pdChars.has(norm(name)), fix, city: !!fix && now - fix <= CITY_S };
+  // in the city: the map placed them lately, or (some it never can: the minimap hidden, covered, unreadable)
+  // live as one of their known characters with NoPixel in the title (not another server, not a dev stream)
+  const placed = !!fix && now - fix <= CITY_S;
+  const known = (st.character ?? []).some((c) => charKey(c) === k) && NOPIXEL_RE.test([st.twitch?.title, st.kick?.title].filter(Boolean).join(' '));
+  nowLive[st.id] = { k, name, pd: pdChars.has(norm(name)), fix, city: placed || known };
 }
 const gap = state.at ? now - state.at : 0;
 if (state.at) {
