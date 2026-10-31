@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NoPixel Time Played</title>
+<meta name="description" content="How long every NoPixel V character has been live on stream. Search any character or streamer.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@1,700;1,800&family=DM+Sans:opsz,wght@9..40,400..800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #050506; --panel: #0d0e11; --line: rgba(255,255,255,.10); --text: #f2f3f5; --muted: #8b8f98;
+  --teal: #2ee6d6; --live: #ff3b38; --hover: rgba(255,255,255,.06);
+  --font-sans: "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif; --font-cond: "Barlow Condensed", "Arial Narrow", sans-serif;
+}
+* { box-sizing: border-box; }
+html { color-scheme: dark; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 400 15px/1.45 var(--font-sans); }
+a { color: var(--teal); }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 28px 16px 48px; }
+header h1 { margin: 0; font: italic 800 clamp(34px, 6vw, 56px)/0.95 var(--font-cond); text-transform: uppercase; letter-spacing: .01em; }
+header h1 em { color: var(--teal); font-style: italic; }
+header p { margin: 10px 0 0; color: var(--muted); max-width: 720px; }
+.meta { margin-top: 6px; font-size: 13px; color: var(--muted); }
+.tools { position: sticky; top: 0; z-index: 2; margin: 22px -16px 0; padding: 12px 16px; background: rgba(5,5,6,.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); display: grid; gap: 10px; }
+.row { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; }
+.search { flex: 1 1 260px; position: relative; }
+.search input { width: 100%; padding: 11px 14px 11px 38px; border: 0; border-radius: 999px; background: rgba(255,255,255,.07); box-shadow: inset 0 0 0 1px var(--line); color: var(--text); font: 500 15px/1.2 var(--font-sans); outline: none; }
+.search input:focus { box-shadow: inset 0 0 0 1px var(--teal); }
+.search svg { position: absolute; left: 13px; top: 50%; translate: 0 -50%; width: 17px; height: 17px; fill: none; stroke: var(--muted); stroke-width: 2; }
+.seg { display: inline-flex; border-radius: 6px; overflow: hidden; box-shadow: inset 0 0 0 1px var(--line); }
+.seg button { border: 0; padding: 7px 12px; background: transparent; color: var(--muted); font: italic 700 14px/1 var(--font-cond); text-transform: uppercase; letter-spacing: .03em; cursor: pointer; }
+.seg button + button { box-shadow: -1px 0 0 var(--line); }
+.seg button[hidden] { display: none; }
+.seg button:hover { color: var(--text); }
+.seg button[aria-pressed="true"] { background: #fff; color: #000; }
+.count { margin: 14px 0 6px; font-size: 13px; color: var(--muted); }
+ol.list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.r { display: grid; grid-template-columns: 34px 36px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 7px 10px; border-radius: 10px; }
+.r:hover { background: var(--hover); }
+.rank { text-align: right; font: 800 13px/1 var(--font-sans); color: var(--muted); font-variant-numeric: tabular-nums; }
+.r:nth-child(-n+3) .rank { color: var(--teal); }
+.av { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; background: rgba(255,255,255,.08); display: grid; place-items: center; font: 700 13px/1 var(--font-sans); color: var(--muted); overflow: hidden; }
+.who { display: grid; min-width: 0; }
+.who b { display: flex; align-items: center; gap: 7px; font: 700 15px/1.25 var(--font-sans); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.who small { font-size: 12.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.who small a { color: inherit; text-decoration: underline; text-decoration-color: rgba(255,255,255,.25); text-underline-offset: 2px; cursor: pointer; }
+.who small a:hover { color: var(--text); }
+.tag { flex: none; padding: 0 6px; border-radius: 999px; font: 800 9.5px/1.6 var(--font-sans); text-transform: uppercase; }
+.tag.live { background: var(--live); color: #fff; }
+.tag.pd { background: #2f6bff; color: #fff; }
+.num { display: grid; justify-items: end; min-width: 150px; }
+.num b { font: 800 16px/1.2 var(--font-sans); font-variant-numeric: tabular-nums; }
+.num small { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.more { display: block; margin: 14px auto 0; padding: 10px 18px; border: 0; border-radius: 6px; background: #fff; color: #000; font: italic 800 15px/1 var(--font-cond); text-transform: uppercase; cursor: pointer; }
+.more[hidden] { display: none; }
+.note { padding: 28px 10px; color: var(--muted); text-align: center; }
+footer { margin-top: 36px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--muted); display: grid; gap: 6px; }
+@media (max-width: 720px) {
+  .r { grid-template-columns: 26px 32px minmax(0, 1fr) auto; gap: 9px; padding: 7px 4px; }
+  .av { width: 32px; height: 32px; }
+  .num { min-width: 0; max-width: 118px; }
+  .num small { white-space: normal; text-align: right; line-height: 1.3; }
+  .tools { position: static; } /* (four rows of controls: on a phone they'd cover too much) */
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>NoPixel <em>time played</em></h1>
+    <p>How long every NoPixel V character has been live on stream, in the city. Find any character or streamer.</p>
+    <p class="meta" id="meta">Loading…</p>
+  </header>
+
+  <div class="tools">
+    <div class="row">
+      <label class="search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span class="sr" hidden>Find a character or streamer</span><input id="q" type="search" placeholder="Find a character or streamer" autocomplete="off" spellcheck="false" aria-label="Find a character or streamer"></label>
+      <div class="seg" id="p" role="group" aria-label="When"><button data-v="all">All time</button><button data-v="30d">30 days</button><button data-v="7d">7 days</button><button data-v="24h">24 h</button></div>
+    </div>
+    <div class="row">
+      <div class="seg" id="v" role="group" aria-label="Show"><button data-v="chars">Characters</button><button data-v="streamers">Streamers</button></div>
+      <div class="seg" id="s" role="group" aria-label="Sort by"><button data-v="on">Most time</button><button data-v="avg" title="Average per day they played">Most per day</button><button data-v="az">A–Z</button></div>
+      <div class="seg" id="f" role="group" aria-label="Who"><button data-v="all">Everyone</button><button data-v="pd">Police</button><button data-v="live">Live</button></div>
+    </div>
+  </div>
+
+  <p class="count" id="count"></p>
+  <ol class="list" id="list"></ol>
+  <button class="more" id="more" hidden>Show more</button>
+
+  <footer>
+    <span><b>Time</b>: how long they were live on stream as that character, in the city (other games and just chatting don't count). <b>Days</b>: how many days they played, all time.</span>
+    <span>Updated every 10 minutes from <a href="https://gtaservers.org/nopixel" rel="noopener">gtaservers.org</a>'s live NoPixel map. By <a href="https://github.com/VoidSector/NoPixel-Map-Companion" rel="noopener">NoPixel Live Map</a>. Unofficial fan project, not affiliated with NoPixel.</span>
+  </footer>
+</div>
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const hours = (m) => (m >= 600 ? `${Math.round(m / 60)}` : m >= 60 ? (m / 60).toFixed(1) : null);
+const fmt = (m) => (hours(m) ? `${hours(m)} h` : `${m} min`);
+const ago = (t) => { const m = Math.max(0, Math.round((Date.now() / 1000 - t) / 60)); return m < 1 ? 'just now' : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} days ago`; };
+const PI = { all: 0, '30d': 1, '7d': 2, '24h': 3 };
+
+// the state, kept in the address so a view can be shared (?q=kyle&p=7d)
+const url = new URL(location.href);
+const st = { q: url.searchParams.get('q') ?? '', p: url.searchParams.get('p') ?? 'all', v: url.searchParams.get('v') ?? 'chars', s: url.searchParams.get('s') ?? 'on', f: url.searchParams.get('f') ?? 'all', shown: 100 };
+if (!(st.p in PI)) st.p = 'all';
+if (!['on', 'avg', 'az'].includes(st.s)) st.s = 'on';
+let D = null, live = new Set();
+
+function share() {
+  const u = new URL(location.href);
+  for (const [k, def] of [['q', ''], ['p', 'all'], ['v', 'chars'], ['s', 'on'], ['f', 'all']]) { if (st[k] && st[k] !== def) u.searchParams.set(k, st[k]); else u.searchParams.delete(k); }
+  history.replaceState(null, '', u);
+}
+function avatar(login) {
+  const src = D.avatars[login];
+  return src ? `<img class="av" src="${esc(src)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'av',textContent:'${esc(login.slice(0, 2).toUpperCase())}'}))">`
+    : `<span class="av" aria-hidden="true">${esc(login.slice(0, 2).toUpperCase())}</span>`;
+}
+function rows() {
+  const i = PI[st.p], q = st.q.trim().toLowerCase();
+  let list = D.rows.map(([s, c, pd, d, on]) => ({ s, c, pd: !!pd, d, on: on[i], live: live.has(s) })).filter((r) => r.on > 0);
+  if (st.v === 'streamers') {
+    const by = new Map();
+    for (const r of list) {
+      const x = by.get(r.s) ?? by.set(r.s, { s: r.s, c: null, chars: [], pd: false, d: 0, on: 0, live: r.live }).get(r.s);
+      x.on += r.on; x.d = Math.max(x.d, r.d); x.pd ||= r.pd; x.chars.push([r.c, r.on]);
+    }
+    list = [...by.values()];
+    for (const x of list) x.chars.sort((a, b) => b[1] - a[1]);
+  }
+  if (q) list = list.filter((r) => `${r.s} ${r.c ?? ''} ${(r.chars ?? []).map((x) => x[0]).join(' ')}`.toLowerCase().includes(q));
+  if (st.f === 'pd') list = list.filter((r) => r.pd);
+  if (st.f === 'live') list = list.filter((r) => r.live);
+  const name = (r) => (r.c ?? r.s).toLowerCase();
+  const perDay = (r) => r.on / Math.max(1, r.d);
+  if (st.s === 'avg' && i !== 0) st.s = 'on'; // (days played are all-time: per day only makes sense there)
+  const by = { on: (a, b) => b.on - a.on, avg: (a, b) => perDay(b) - perDay(a), az: (a, b) => name(a).localeCompare(name(b)) }[st.s] ?? (() => 0);
+  return list.sort((a, b) => by(a, b) || name(a).localeCompare(name(b)));
+}
+function render() {
+  $('#s [data-v="avg"]').hidden = st.p !== 'all';
+  for (const k of ['p', 'v', 's', 'f']) for (const b of $(`#${k}`).querySelectorAll('[data-v]')) b.setAttribute('aria-pressed', String(b.dataset.v === st[k]));
+  const list = rows(), i = PI[st.p];
+  const label = { all: 'all time', '30d': 'the last 30 days', '7d': 'the last 7 days', '24h': 'the last 24 hours' }[st.p];
+  $('#count').textContent = `${list.length.toLocaleString()} ${st.v === 'streamers' ? 'streamers' : 'characters'} · ${label}${st.q ? ` · matching “${st.q}”` : ''}`;
+  $('#list').innerHTML = list.slice(0, st.shown).map((r, k) => {
+    const tags = `${r.pd ? '<span class="tag pd">police</span>' : ''}${r.live ? '<span class="tag live">live</span>' : ''}`;
+    const sub = st.v === 'streamers'
+      ? esc(r.chars.slice(0, 4).map((x) => x[0]).join(', ') + (r.chars.length > 4 ? ` +${r.chars.length - 4}` : ''))
+      : `<a data-pick="${esc(r.s)}" title="All of ${esc(r.s)}'s characters">${esc(r.s)}</a>`;
+    return `<li class="r">
+      <span class="rank">${k + 1}</span>${avatar(r.s)}
+      <span class="who"><b>${esc(r.c ?? r.s)}${tags}</b><small>${sub}</small></span>
+      <span class="num"><b>${esc(fmt(r.on))}</b><small>${i === 0 ? `${r.d} day${r.d === 1 ? '' : 's'} · ${esc(fmt(Math.round(r.on / Math.max(1, r.d))))} a day` : 'on stream'}</small></span>
+    </li>`;
+  }).join('') || `<li class="note">Nobody matches${st.q ? ` “${esc(st.q)}”` : ''}${st.f === 'live' ? ' among those live' : ''}.</li>`;
+  $('#more').hidden = list.length <= st.shown;
+  $('#more').textContent = `Show more (${(list.length - st.shown).toLocaleString()} left)`;
+  share();
+}
+for (const k of ['p', 'v', 's', 'f']) $(`#${k}`).addEventListener('click', (e) => { const b = e.target.closest('[data-v]'); if (!b || st[k] === b.dataset.v) return; st[k] = b.dataset.v; st.shown = 100; render(); });
+$('#q').value = st.q;
+let qTimer = 0;
+$('#q').addEventListener('input', () => { clearTimeout(qTimer); qTimer = setTimeout(() => { st.q = $('#q').value; st.shown = 100; render(); }, 120); });
+$('#more').addEventListener('click', () => { st.shown += 200; render(); });
+$('#list').addEventListener('click', (e) => { const a = e.target.closest('[data-pick]'); if (!a) return; st.q = a.dataset.pick; $('#q').value = st.q; st.v = 'chars'; st.shown = 100; render(); scrollTo({ top: 0, behavior: 'smooth' }); });
+
+// the data is updated every 10 minutes: fetched again every 5 (the list keeps its place)
+function meta() {
+  const since = D.since ? new Date(D.since * 1000).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' }) : null;
+  $('#meta').textContent = `${D.rows.length.toLocaleString()} characters · counted since ${since ?? 'the start'} · updated ${ago(D.made)}`;
+}
+function load() {
+  return fetch(`leaderboard.json?t=${Math.floor(Date.now() / 60_000)}`, { cache: 'no-cache' }).then((r) => (r.ok ? r.json() : Promise.reject(new Error(r.status)))).then((d) => {
+    const fresh = !D || d.made !== D.made;
+    D = d; live = new Set(d.live ?? []);
+    meta();
+    if (fresh) render();
+  });
+}
+load().catch(() => { $('#meta').textContent = 'The leaderboard couldn’t be loaded. Try again in a minute.'; });
+setInterval(() => { if (!document.hidden) load().catch(() => {}); else if (D) meta(); }, 5 * 60_000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden && D && Date.now() / 1000 - D.made > 5 * 60) load().catch(() => {}); });
+</script>
+</body>
+</html>

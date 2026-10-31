@@ -1,0 +1,41 @@
+# Keeps the time-played leaderboard (https://voidsector.github.io/NoPixel-Map-Companion/) up to date:
+# every 10 minutes one look at the live NoPixel feed adds the time since the last look, and the page
+# and its data are published to GitHub Pages. The totals live in the published site (state.json).
+name: Time played leaderboard
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['leaderboard/**', '.github/workflows/leaderboard.yml']
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: leaderboard
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Count the time since the last look
+        run: node leaderboard/update.mjs site
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deploy
+        uses: actions/deploy-pages@v4
