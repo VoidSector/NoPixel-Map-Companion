@@ -22,6 +22,11 @@ const DAY = 86400, HOUR = 3600;
 const CITY_S = 2 * HOUR;      // last placed on the map this long ago or less: in the city
 const SAME_S = 2 * HOUR;      // live at both looks this far apart or less: live all along
 const EDGE_S = 15 * 60;       // started / stopped in between: at most this much
+const KEEP_H = 31 * 24;       // minutes per hour kept this long: the page makes its days from them, in its time zone
+// Days played are counted in US Eastern time: NoPixel's busiest hours are the US evening, which runs past
+// midnight UTC (one evening would be two days). The day number of a moment, there:
+const ET = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' });
+const etDay = (ts) => Math.floor(Date.parse(`${ET.format(new Date(ts * 1000))}T00:00:00Z`) / 1000 / DAY);
 
 // one character however it's written: letters and digits only ("Happy D'Klown" = "Happy Dklown")
 const charWords = (ch) => String(ch ?? '').toLowerCase().normalize('NFKD').split(/\s+/).map((w) => w.replace(/[^a-z0-9]/g, '')).filter(Boolean);
@@ -92,17 +97,16 @@ const getJson = (url) => fetch(url, { headers: { accept: 'application/json' }, s
 function credit(state, id, who, from, to) {
   if (to <= from) return;
   const k = `${id}|${who.k}`;
-  const r = state.rows[k] ??= { s: id, n: {}, pd: false, t: 0, d: 0, ld: -1, dm: {}, hm: {} };
+  const r = state.rows[k] ??= { s: id, n: {}, pd: false, t: 0, d: 0, ld: -1, hm: {} };
   r.pd ||= !!who.pd;
   r.n[who.name] = (r.n[who.name] ?? 0) + (to - from) / 60;
   r.f = Math.min(r.f ?? from, from); r.ls = Math.max(r.ls ?? 0, to);
   r.hd ??= new Array(24).fill(0);
   for (let a = from; a < to;) {
-    const h = Math.floor(a / HOUR), b = Math.min(to, (h + 1) * HOUR), m = (b - a) / 60, d = Math.floor(a / DAY);
+    const h = Math.floor(a / HOUR), b = Math.min(to, (h + 1) * HOUR), m = (b - a) / 60, d = etDay(a);
     r.t += m;
     r.hm[h] = (r.hm[h] ?? 0) + m;
     r.hd[h % 24] += m;
-    r.dm[d] = (r.dm[d] ?? 0) + m;
     if (d > r.ld) { r.d++; r.ld = d; }
     a = b;
   }
@@ -123,6 +127,25 @@ if ((state.v ?? 1) < 2) {
   state.pulse = seed.pulse ?? [];
   state.restarts = seed.restarts ?? [];
   state.v = 2;
+}
+// state from before days were US Eastern and hours were kept a month: days played and the last month's
+// hours from seed.json (counted that way from the full recorded history), once; the hours since the seed
+// was made stay as counted here
+if (state.v < 3) {
+  const seed = JSON.parse(await readFile(new URL('seed.json', HERE), 'utf8'));
+  const upTo = Math.floor(seed.made / HOUR);
+  for (const [k, r] of Object.entries(state.rows)) {
+    delete r.dm;
+    const x = seed.rows[k];
+    if (!x) { r.ld = etDay(r.ls ?? now); continue; }
+    r.d = x.d; r.ld = x.ld;
+    const hm = { ...x.hm };
+    for (const [h, m] of Object.entries(r.hm)) if (h > upTo) hm[h] = m;
+    r.hm = hm;
+  }
+  // the pulse with who was streaming and in the city too: the seed's, then the looks since
+  state.pulse = [...(seed.pulse ?? []), ...(state.pulse ?? []).filter(([t]) => t > seed.made)];
+  state.v = 3;
 }
 const [{ roster, pos }, npl, wiki] = await Promise.all([snapshot(), getJson('https://nopixellink.dev/api/map'), getJson('https://wiki.gtaservers.org/nopixel-v.json')]);
 
@@ -160,24 +183,25 @@ if (state.at) {
 }
 state.at = now;
 state.prev = nowLive;
-// the city pulse: how many were on the map at each look (placed in the last 2 minutes), the last 7 days;
-// a restart: everyone off at once (under a quarter of the half hour before, with 20+ on before)
+// the city pulse, at each look for the last 7 days: [time, on the map (placed in the last 2 minutes), in
+// the city (live as a character there), streaming (live)]; a restart: everyone off the map at once (under
+// a quarter of the half hour before, with 20+ on before)
 const onMap = roster.filter((st) => now - (pos.get(st.id)?.ts ?? 0) <= 120).length;
+const inCity = Object.values(nowLive).filter((w) => w.city).length;
 state.pulse ??= []; state.restarts ??= [];
 const before30 = state.pulse.filter(([t]) => now - t <= 35 * 60).map(([, n]) => n).sort((a, b) => a - b);
 const med = before30[before30.length >> 1] ?? 0;
 if (before30.length >= 2 && med >= 20 && onMap < med * 0.25 && now - (state.restarts.at(-1) ?? 0) > 3 * HOUR) state.restarts.push(now);
-state.pulse.push([now, onMap]);
+state.pulse.push([now, onMap, Math.max(onMap, inCity), Math.max(onMap, roster.length)]);
 state.pulse = state.pulse.filter(([t]) => now - t <= 7 * DAY);
 state.restarts = state.restarts.filter((t) => now - t <= 7 * DAY);
 // pictures (Twitch / Kick only)
 state.avatars ??= {};
 for (const st of roster) if (st.avatar && /^https:\/\/(static-cdn\.jtvnw\.net|files\.kick\.com)\//.test(st.avatar)) state.avatars[st.id] = st.avatar;
 // only the last 31 days / 25 hours are needed per row
-const today = Math.floor(now / DAY), hourNow = Math.floor(now / HOUR);
+const hourNow = Math.floor(now / HOUR);
 for (const r of Object.values(state.rows)) {
-  for (const d of Object.keys(r.dm)) if (d < today - 31) delete r.dm[d];
-  for (const h of Object.keys(r.hm)) if (h < hourNow - 25) delete r.hm[h];
+  for (const h of Object.keys(r.hm)) if (h < hourNow - KEEP_H) delete r.hm[h];
 }
 
 // ---- the page's data: one row per streamer and character (spellings and short forms joined) ----
@@ -185,18 +209,20 @@ const groups = new Map();
 const short = shortForms(Object.values(state.rows).flatMap((r) => Object.keys(r.n).map((n) => [r.s, n])));
 for (const [key, r] of Object.entries(state.rows)) {
   const to = short.get(key) ?? key;
-  const g = groups.get(to) ?? groups.set(to, { s: r.s, n: {}, pd: false, d: 0, on: [0, 0, 0, 0], p7: 0, dm: new Array(30).fill(0), hd: new Array(24).fill(0), f: Infinity, ls: 0 }).get(to);
+  const g = groups.get(to) ?? groups.set(to, { s: r.s, n: {}, pd: false, d: 0, on: [0, 0, 0, 0], p7: 0, hm: {}, hd: new Array(24).fill(0), f: Infinity, ls: 0 }).get(to);
   for (const [n, m] of Object.entries(r.n)) g.n[n] = (g.n[n] ?? 0) + m;
   g.pd ||= r.pd;
   g.d = Math.max(g.d, r.d);
   g.on[0] += r.t;
   g.f = Math.min(g.f, r.f ?? Infinity); g.ls = Math.max(g.ls, r.ls ?? 0);
   (r.hd ?? []).forEach((m, i) => { g.hd[i] += m; });
-  for (const [d, m] of Object.entries(r.dm)) {
-    if (d > today - 30) { g.on[1] += m; g.dm[29 - (today - d)] += m; }
-    if (d > today - 7) g.on[2] += m; else if (d > today - 14) g.p7 += m; // (the 7 days before: who's rising)
+  // the last 30 days / 7 days / 24 hours, and the 7 days before (who's rising): rolling, by the hour
+  for (const [h, m] of Object.entries(r.hm)) {
+    const ago = hourNow - h;
+    if (ago < 720) { g.on[1] += m; g.hm[h] = (g.hm[h] ?? 0) + m; }
+    if (ago < 168) g.on[2] += m; else if (ago < 336) g.p7 += m;
+    if (ago < 24) g.on[3] += m;
   }
-  for (const [h, m] of Object.entries(r.hm)) if (h > hourNow - 24) g.on[3] += m;
 }
 const rows = [...groups.values()].map((g) => ({ ...g, c: Object.entries(g.n).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null, on: g.on.map(Math.round) }))
   .filter((g) => g.c && g.on[0] >= 1).sort((a, b) => b.on[0] - a.on[0]);
@@ -207,11 +233,14 @@ const data = {
   avatars: Object.fromEntries(Object.entries(state.avatars).filter(([l]) => used.has(l))),
   // [streamer, character, police, days, [minutes: all, 30 d, 7 d, 24 h], minutes the 7 days before]
   rows: rows.map((r) => [r.s, r.c, r.pd ? 1 : 0, r.d, r.on, Math.round(r.p7)]),
-  pulse: state.pulse.map(([t, n]) => [t, n]), restarts: state.restarts,
+  pulse: state.pulse, restarts: state.restarts,
 };
-// a character's page (fetched when one is opened): minutes per day for the last 30 (oldest first, the last
-// is today, UTC), minutes per hour of the day (UTC, all time), first and last seen
-const details = { today, rows: Object.fromEntries(rows.map((r) => [`${r.s}|${r.c}`, { dm: r.dm.map(Math.round), hd: r.hd.map(Math.round), f: Number.isFinite(r.f) ? Math.round(r.f) : null, ls: Math.round(r.ls) || null }])) };
+// a character's page (fetched when one is opened): their minutes in each hour of the last 30 days, as
+// [hour - h0, minutes, …] (the page makes days of them in its time zone), minutes per hour of the day (UTC,
+// all time), first and last seen
+const h0 = hourNow - 719;
+const hmList = (hm) => Object.entries(hm).map(([h, m]) => [h - h0, Math.round(m)]).filter(([o, m]) => o >= 0 && m > 0).sort((a, b) => a[0] - b[0]).flat();
+const details = { h0, rows: Object.fromEntries(rows.map((r) => [`${r.s}|${r.c}`, { hm: hmList(r.hm), hd: r.hd.map(Math.round), f: Number.isFinite(r.f) ? Math.round(r.f) : null, ls: Math.round(r.ls) || null }])) };
 // a drop means something went wrong: don't publish it over the good totals
 const before = state.made ?? 0;
 state.made = now;
