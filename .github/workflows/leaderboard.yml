@@ -1,11 +1,15 @@
 # Keeps the time-played leaderboard (https://voidsector.github.io/NoPixel-Map-Companion/) up to date:
-# every 10 minutes one look at the live NoPixel feed adds the time since the last look, and the page
-# and its data are published to GitHub Pages. The totals live in the published site (state.json).
+# one look at the live NoPixel feed adds the time since the last look, and the page and its data are
+# published to GitHub Pages. The totals live in the published site (state.json).
+#
+# Every ~10 minutes: each run starts leaderboard-timer.yml, which waits 9 minutes (its environment's
+# wait timer, no runner meanwhile) and starts the next run. GitHub's own schedule is only "best effort"
+# (often late, sometimes not at all), so the cron below is just the backstop that restarts the chain.
 name: Time played leaderboard
 
 on:
   schedule:
-    - cron: '*/10 * * * *'
+    - cron: '7,37 * * * *'   # off the round minutes, when GitHub is busiest
   workflow_dispatch:
   push:
     branches: [main]
@@ -15,6 +19,7 @@ permissions:
   contents: read
   pages: write
   id-token: write
+  actions: write   # to start the timer
 
 concurrency:
   group: leaderboard
@@ -39,3 +44,8 @@ jobs:
           path: site
       - id: deploy
         uses: actions/deploy-pages@v4
+      - name: Start the timer for the next run
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run leaderboard-timer.yml -R "$GITHUB_REPOSITORY"

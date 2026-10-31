@@ -1,0 +1,26 @@
+# The leaderboard's clock: started by each leaderboard run, waits 9 minutes (the wait timer of the
+# "leaderboard-timer" environment: no runner is used while waiting), then starts the next run.
+# One waits at a time, and at most one more queues behind it (newer ones replace it), so two chains
+# (the backstop cron starting one while another is going) merge into one.
+name: Leaderboard timer
+
+on:
+  workflow_dispatch:
+
+permissions:
+  actions: write
+
+concurrency:
+  group: leaderboard-timer
+  cancel-in-progress: false
+
+jobs:
+  next:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    environment: leaderboard-timer
+    steps:
+      - name: Start the next leaderboard run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run leaderboard.yml -R "$GITHUB_REPOSITORY"
