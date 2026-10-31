@@ -71,7 +71,11 @@ footer { margin-top: 36px; padding-top: 16px; border-top: 1px solid var(--line);
 .pulse-chart .day { stroke: var(--line); stroke-width: 1; vector-effect: non-scaling-stroke; }
 .pulse-days { position: relative; height: 16px; font-size: 11px; color: var(--muted); }
 .pulse-days span { position: absolute; top: 2px; translate: 4px 0; white-space: nowrap; }
-.pulse-tip { position: absolute; top: -6px; translate: -50% -100%; padding: 4px 8px; border-radius: 6px; background: #fff; color: #000; font-size: 12px; font-weight: 600; white-space: nowrap; pointer-events: none; }
+.pulse-tip, .tip { padding: 5px 9px; border-radius: 7px; background: #1b1d22; color: var(--text); box-shadow: 0 8px 24px rgba(0,0,0,.55), inset 0 0 0 1px rgba(255,255,255,.14); font: 600 12px/1.35 var(--font-sans); white-space: nowrap; pointer-events: none; }
+.pulse-tip { position: absolute; top: -6px; translate: -50% -100%; }
+.tip { position: fixed; z-index: 100; max-width: min(320px, calc(100vw - 16px)); white-space: normal; }
+.tip[hidden] { display: none; }
+.tip b, .pulse-tip b { color: var(--teal); font-weight: 700; }
 .pulse-tip[hidden] { display: none; }
 .pulse-cursor { position: absolute; top: 0; height: 120px; width: 1px; background: rgba(255,255,255,.5); pointer-events: none; }
 .pulse-cursor[hidden] { display: none; }
@@ -80,6 +84,18 @@ footer { margin-top: 36px; padding-top: 16px; border-top: 1px solid var(--line);
 /* rising */
 .up { color: var(--teal); }
 .down { color: var(--muted); }
+.rising { margin-top: 12px; padding: 14px 16px; border-radius: 12px; background: var(--panel); box-shadow: inset 0 0 0 1px var(--line); }
+.rising-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; }
+.rising-head h2 { margin: 0; font: italic 800 18px/1 var(--font-cond); text-transform: uppercase; letter-spacing: .02em; }
+.rising-head span { flex: 1; font-size: 12.5px; color: var(--muted); }
+.rising-head button { border: 0; padding: 6px 12px; border-radius: 6px; background: #fff; color: #000; font: italic 800 13px/1 var(--font-cond); text-transform: uppercase; cursor: pointer; }
+.rising-list { list-style: none; margin: 12px 0 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.rising-list li { display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 4px 10px; align-items: center; padding: 9px 10px; border-radius: 10px; background: rgba(255,255,255,.04); cursor: pointer; }
+.rising-list li:hover, .rising-list li:focus-visible { background: rgba(255,255,255,.08); outline: none; }
+.rising-list .av { grid-row: span 2; }
+.rising-list b { font: 700 14px/1.2 var(--font-sans); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rising-list small { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rising-list small .up { font-weight: 700; }
 /* a character's page */
 .r.click { cursor: pointer; }
 dialog.ch { width: min(640px, calc(100vw - 24px)); max-height: calc(100vh - 32px); padding: 0; border: 0; border-radius: 14px; background: var(--panel); color: var(--text); box-shadow: 0 30px 80px rgba(0,0,0,.7), inset 0 0 0 1px var(--line); }
@@ -110,7 +126,11 @@ dialog.ch::backdrop { background: rgba(0,0,0,.65); }
 .ch-others button { border: 0; padding: 5px 10px; border-radius: 999px; background: rgba(255,255,255,.07); color: var(--text); font: 600 13px/1.2 var(--font-sans); cursor: pointer; }
 .ch-others button:hover { background: rgba(255,255,255,.14); }
 .ch-others button small { color: var(--muted); font-weight: 500; }
+@media (max-width: 960px) { .rising-list { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); } }
 @media (max-width: 720px) {
+  .rising-list { grid-template-columns: minmax(0, 1fr); }
+  .rising-head span { flex: 1 1 100%; order: 3; }
+  .rising-head h2 { flex: 1; }
   .ch-in { padding: 16px 14px; }
   .ch-top { grid-template-columns: 44px minmax(0, 1fr) auto; }
   .ch-top .av { width: 44px; height: 44px; }
@@ -137,6 +157,11 @@ dialog.ch::backdrop { background: rgba(0,0,0,.65); }
     <div class="pulse-legend"><span>People on the map, the last 7 days</span><span><i></i>City restart</span></div>
   </section>
 
+  <section class="rising" aria-labelledby="rising-h">
+    <div class="rising-head"><h2 id="rising-h">Rising this week</h2><span>More time these 7 days than the 7 before</span><button type="button" id="rising-all">See all risers</button></div>
+    <ol class="rising-list" id="rising-list"></ol>
+  </section>
+
   <div class="tools">
     <div class="row">
       <label class="search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span class="sr" hidden>Find a character or streamer</span><input id="q" type="search" placeholder="Find a character or streamer" autocomplete="off" spellcheck="false" aria-label="Find a character or streamer"></label>
@@ -144,7 +169,7 @@ dialog.ch::backdrop { background: rgba(0,0,0,.65); }
     </div>
     <div class="row">
       <div class="seg" id="v" role="group" aria-label="Show"><button data-v="chars">Characters</button><button data-v="streamers">Streamers</button></div>
-      <div class="seg" id="s" role="group" aria-label="Sort by"><button data-v="on">Most time</button><button data-v="avg" title="Average per day they played">Most per day</button><button data-v="up" title="Most more time these 7 days than the 7 before">Rising</button><button data-v="az">A–Z</button></div>
+      <div class="seg" id="s" role="group" aria-label="Sort by"><button data-v="on">Most time</button><button data-v="avg" data-tip="Average per day they played">Most per day</button><button data-v="up" data-tip="Most more time these 7 days than the 7 before">Rising</button><button data-v="az">A–Z</button></div>
       <div class="seg" id="f" role="group" aria-label="Who"><button data-v="all">Everyone</button><button data-v="pd">Police</button><button data-v="live">Live</button></div>
     </div>
   </div>
@@ -153,6 +178,7 @@ dialog.ch::backdrop { background: rgba(0,0,0,.65); }
   <ol class="list" id="list"></ol>
   <button class="more" id="more" hidden>Show more</button>
 
+  <div class="tip" id="tip" role="tooltip" hidden></div>
   <dialog class="ch" id="ch" aria-labelledby="ch-name"><div class="ch-in" id="ch-in"></div></dialog>
 
   <footer>
@@ -210,7 +236,6 @@ function rows() {
 const rise = (m) => (m >= 1 ? `<span class="up">+${esc(fmt(m))}</span> vs last week` : m <= -1 ? `<span class="down">−${esc(fmt(-m))}</span> vs last week` : 'same as last week');
 function render() {
   $('#s [data-v="avg"]').hidden = st.p !== 'all';
-  $('#s [data-v="up"]').hidden = st.p !== '7d';
   for (const k of ['p', 'v', 's', 'f']) for (const b of $(`#${k}`).querySelectorAll('[data-v]')) b.setAttribute('aria-pressed', String(b.dataset.v === st[k]));
   const list = rows(), i = PI[st.p];
   const label = { all: 'all time', '30d': 'the last 30 days', '7d': 'the last 7 days', '24h': 'the last 24 hours' }[st.p];
@@ -219,7 +244,7 @@ function render() {
     const tags = `${r.pd ? '<span class="tag pd">police</span>' : ''}${r.live ? '<span class="tag live">live</span>' : ''}`;
     const sub = st.v === 'streamers'
       ? esc(r.chars.slice(0, 4).map((x) => x[0]).join(', ') + (r.chars.length > 4 ? ` +${r.chars.length - 4}` : ''))
-      : `<a data-pick="${esc(r.s)}" title="All of ${esc(r.s)}'s characters">${esc(r.s)}</a>`;
+      : `<a data-pick="${esc(r.s)}" data-tip="All of ${esc(r.s)}'s characters">${esc(r.s)}</a>`;
     return `<li class="r${st.v === 'chars' ? ' click' : ''}"${st.v === 'chars' ? ` data-open="${esc(r.s)}|${esc(r.c)}" tabindex="0"` : ''}>
       <span class="rank">${k + 1}</span>${avatar(r.s)}
       <span class="who"><b>${esc(r.c ?? r.s)}${tags}</b><small>${sub}</small></span>
@@ -230,7 +255,44 @@ function render() {
   $('#more').textContent = `Show more (${(list.length - st.shown).toLocaleString()} left)`;
   share();
 }
-for (const k of ['p', 'v', 's', 'f']) $(`#${k}`).addEventListener('click', (e) => { const b = e.target.closest('[data-v]'); if (!b || st[k] === b.dataset.v) return; st[k] = b.dataset.v; st.shown = 100; render(); });
+for (const k of ['p', 'v', 's', 'f']) $(`#${k}`).addEventListener('click', (e) => {
+  const b = e.target.closest('[data-v]');
+  if (!b || st[k] === b.dataset.v) return;
+  st[k] = b.dataset.v; st.shown = 100;
+  if (k === 's' && st.s === 'up') st.p = '7d'; // (rising: this week against the one before)
+  render();
+});
+function showRisers() { st.p = '7d'; st.s = 'up'; st.v = 'chars'; st.q = ''; $('#q').value = ''; st.shown = 100; render(); $('.tools').scrollIntoView({ behavior: 'smooth' }); }
+$('#rising-all').addEventListener('click', showRisers);
+
+// ---- rising this week: the top five, always in view ----
+function rising() {
+  const top = D.rows.map((r) => ({ s: r[0], c: r[1], wk: r[4][2], up: r[4][2] - (r[5] ?? 0) })).filter((r) => r.up >= 60).sort((a, b) => b.up - a.up).slice(0, 5);
+  $('#rising-list').innerHTML = top.length ? top.map((r) => `<li data-open="${esc(r.s)}|${esc(r.c)}" tabindex="0">${avatar(r.s)}<b>${esc(r.c)}${live.has(r.s) ? ' <span class="tag live">live</span>' : ''}</b>
+      <small><span class="up">+${esc(fmt(r.up))}</span> · ${esc(fmt(r.wk))} this week</small></li>`).join('')
+    : '<li class="note" style="grid-column:1/-1;cursor:default">Nobody yet this week.</li>';
+}
+$('#rising-list').addEventListener('click', (e) => { const o = e.target.closest('[data-open]'); if (o) openChar(o.dataset.open); });
+$('#rising-list').addEventListener('keydown', (e) => { const o = e.target.closest('[data-open]'); if (o && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); openChar(o.dataset.open); } });
+
+// ---- tooltips: [data-tip] on hover or keyboard focus, styled (inside the open dialog when it's in one) ----
+let tipFor = null;
+function showTip(el) {
+  const tip = $('#tip'), host = el.closest('dialog') ?? document.body;
+  if (tip.parentNode !== host) host.appendChild(tip);
+  tipFor = el;
+  tip.textContent = el.dataset.tip;
+  tip.hidden = false;
+  const r = el.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight;
+  const left = Math.min(innerWidth - w - 8, Math.max(8, r.left + r.width / 2 - w / 2));
+  const top = r.top - h - 8 >= 8 ? r.top - h - 8 : r.bottom + 8;
+  tip.style.left = `${left}px`; tip.style.top = `${top}px`;
+}
+function hideTip() { tipFor = null; $('#tip').hidden = true; }
+document.addEventListener('pointerover', (e) => { const el = e.target.closest?.('[data-tip]'); if (el) { if (el !== tipFor) showTip(el); } else if (tipFor) hideTip(); });
+document.addEventListener('focusin', (e) => { const el = e.target.closest?.('[data-tip]'); if (el) showTip(el); });
+document.addEventListener('focusout', hideTip);
+addEventListener('scroll', hideTip, { passive: true });
 $('#q').value = st.q;
 let qTimer = 0;
 $('#q').addEventListener('input', () => { clearTimeout(qTimer); qTimer = setTimeout(() => { st.q = $('#q').value; st.shown = 100; render(); }, 120); });
@@ -296,7 +358,7 @@ async function openChar(key, { keep = false } = {}) {
   if (x) {
     // the last 30 days, oldest first (UTC days); the last is today
     const top = Math.max(60, ...x.dm), day = (k) => (det.today - 29 + k) * 86400 * 1000;
-    daysHtml = `<div class="ch-days">${x.dm.map((m, k) => `<i class="${m ? '' : 'zero'}" style="height:${m ? Math.max(4, (m / top) * 100) : 2}%" title="${esc(shortDate.format(day(k)))}: ${m ? esc(fmt(m)) : 'not on'}"></i>`).join('')}</div>
+    daysHtml = `<div class="ch-days">${x.dm.map((m, k) => `<i class="${m ? '' : 'zero'}" style="height:${m ? Math.max(4, (m / top) * 100) : 2}%" data-tip="${esc(shortDate.format(day(k)))}: ${m ? esc(fmt(m)) : 'not on'}"></i>`).join('')}</div>
       <div class="ch-axis"><span>${esc(shortDate.format(day(0)))}</span><span>${esc(fmt(on[1]))} in 30 days</span><span>today</span></div>`;
     // when they're on: hours of the day in local time (kept in UTC)
     const off = Math.round(-new Date().getTimezoneOffset() / 60);
@@ -304,7 +366,7 @@ async function openChar(key, { keep = false } = {}) {
     const hmax = Math.max(1, ...loc), sum = loc.reduce((a, b) => a + b, 0);
     let best = 0, bestAt = 0;
     for (let h = 0; h < 24; h++) { const w = [0, 1, 2, 3].reduce((t, k) => t + loc[(h + k) % 24], 0); if (w > best) { best = w; bestAt = h; } }
-    if (sum) hoursHtml = `<section><h3>When they're on</h3><div class="ch-hours">${loc.map((m, h) => `<i style="opacity:${(0.08 + 0.92 * (m / hmax)).toFixed(2)}" title="${hh(h)}–${hh(h + 1)}: ${Math.round((100 * m) / sum)}% of their time"></i>`).join('')}</div>
+    if (sum) hoursHtml = `<section><h3>When they're on</h3><div class="ch-hours">${loc.map((m, h) => `<i style="opacity:${(0.08 + 0.92 * (m / hmax)).toFixed(2)}" data-tip="${hh(h)}–${hh(h + 1)}: ${Math.round((100 * m) / sum)}% of their time"></i>`).join('')}</div>
       <div class="ch-axis"><span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>24:00</span></div>
       <p class="ch-peak">Most often <b>${hh(bestAt)}–${hh(bestAt + 4)}</b> (${Math.round((100 * best) / sum)}% of their time)</p></section>`;
   }
@@ -337,7 +399,7 @@ function load() {
     const first = !D;
     D = d; live = new Set(d.live ?? []);
     meta();
-    if (fresh) { DT = null; render(); pulse(); if (!first && $('#ch').open && st.c) openChar(st.c, { keep: true }); }
+    if (fresh) { DT = null; render(); pulse(); rising(); if (!first && $('#ch').open && st.c) openChar(st.c, { keep: true }); }
     if (first && st.c) openChar(st.c);
   });
 }
