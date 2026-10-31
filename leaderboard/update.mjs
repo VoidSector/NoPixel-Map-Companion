@@ -148,6 +148,16 @@ if (state.v < 3) {
   state.pulse = [...(seed.pulse ?? []), ...(state.pulse ?? []).filter(([t]) => t > seed.made)];
   state.v = 3;
 }
+// a stretch of the pulse filled in from the app's recorded history (fill.json, from make-fill.mjs), once
+try {
+  const fill = JSON.parse(await readFile(new URL('fill.json', HERE), 'utf8'));
+  if (fill?.id && !(state.fills ?? []).includes(fill.id)) {
+    const inside = (t) => t >= fill.from && t <= fill.to;
+    state.pulse = [...(state.pulse ?? []).filter((x) => !inside(x[0]) || x.length >= 4), ...fill.pulse.filter((x) => !(state.pulse ?? []).some((y) => Math.abs(y[0] - x[0]) < 300 && y.length >= 4))]
+      .sort((a, b) => a[0] - b[0]);
+    (state.fills ??= []).push(fill.id);
+  }
+} catch { /* nothing to fill */ }
 const [{ roster, pos }, npl, wiki] = await Promise.all([snapshot(), getJson('https://nopixellink.dev/api/map'), getJson('https://wiki.gtaservers.org/nopixel-v.json')]);
 
 // the character nopixellink reports for a live streamer (NoPixel's own), spelled as the feed spells it
