@@ -14,7 +14,7 @@ import { pathToFileURL } from 'node:url';
 import { pickCharacter, setCurrentCharacter } from './character.mjs';
 
 const SITE = 'https://voidsector.github.io/NoPixel-Map-Companion/';
-const FEED = 'wss://west.gtaservers.org/ws?token=nptoken';
+const FEED = 'wss://west.gtaservers.org/private/ws?token=nptoken'; // (moved under /private/, Nov 2026)
 const HERE = new URL('./', import.meta.url);
 const OUT = new URL('./', pathToFileURL(resolve(process.argv[2] ?? 'site') + '/'));
 const now = Math.floor(Date.now() / 1000);
