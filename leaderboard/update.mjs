@@ -148,16 +148,32 @@ if (state.v < 3) {
   state.pulse = [...(seed.pulse ?? []), ...(state.pulse ?? []).filter(([t]) => t > seed.made)];
   state.v = 3;
 }
-// a stretch of the pulse filled in from the app's recorded history (fill.json, from make-fill.mjs), once
-try {
-  const fill = JSON.parse(await readFile(new URL('fill.json', HERE), 'utf8'));
+// a stretch filled in from the app's recorded history (fill.json, from make-fill.mjs), once: the pulse, and
+// (when it has rows) each character's minutes per hour, added as the looks would have
+let fill = null;
+try { fill = JSON.parse(await readFile(new URL('fill.json', HERE), 'utf8')); } catch { /* nothing to fill */ }
+{
   if (fill?.id && !(state.fills ?? []).includes(fill.id)) {
     const inside = (t) => t >= fill.from && t <= fill.to;
     state.pulse = [...(state.pulse ?? []).filter((x) => !inside(x[0]) || x.length >= 4), ...fill.pulse.filter((x) => !(state.pulse ?? []).some((y) => Math.abs(y[0] - x[0]) < 300 && y.length >= 4))]
       .sort((a, b) => a[0] - b[0]);
+    for (const [k, x] of Object.entries(fill.rows ?? {})) {
+      const r = state.rows[k] ??= { s: x.s, n: {}, pd: false, t: 0, d: 0, ld: -1, hm: {} };
+      r.pd ||= !!x.pd;
+      r.hd ??= new Array(24).fill(0);
+      // a day is new to them unless the hours kept already have it (days played: US Eastern)
+      const had = new Set(Object.keys(r.hm).map((h) => etDay(h * HOUR)));
+      for (const [hs, m] of Object.entries(x.hm)) {
+        const h = Number(hs), d = etDay(h * HOUR);
+        r.t += m; r.hm[h] = (r.hm[h] ?? 0) + m; r.hd[h % 24] += m;
+        r.n[x.name] = (r.n[x.name] ?? 0) + m;
+        r.f = Math.min(r.f ?? h * HOUR, h * HOUR); r.ls = Math.max(r.ls ?? 0, (h + 1) * HOUR);
+        if (!had.has(d)) { had.add(d); r.d++; r.ld = Math.max(r.ld, d); }
+      }
+    }
     (state.fills ??= []).push(fill.id);
   }
-} catch { /* nothing to fill */ }
+}
 const [{ roster, pos }, npl, wiki] = await Promise.all([snapshot(), getJson('https://nopixellink.dev/api/map'), getJson('https://wiki.gtaservers.org/nopixel-v.json')]);
 
 // the character nopixellink reports for a live streamer (NoPixel's own), spelled as the feed spells it
