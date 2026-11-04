@@ -85,6 +85,10 @@ footer { margin-top: 36px; padding-top: 16px; border-top: 1px solid var(--line);
 .pulse-legend i { display: inline-block; width: 14px; height: 0; margin-right: 5px; vertical-align: middle; border-top: 1px dashed var(--live); }
 .pulse-legend i.k-live { border-top: 2px solid rgba(255,255,255,.55); }
 .pulse-legend i.k-city { border-top: 2px solid var(--teal); }
+.since { display: flex; align-items: flex-start; gap: 10px; width: fit-content; max-width: 720px; margin: 14px 0 0; padding: 9px 14px 9px 11px; border-radius: 10px; background: rgba(255,255,255,.04); box-shadow: inset 0 0 0 1px var(--line); color: var(--muted); font-size: 13.5px; line-height: 1.45; }
+.since svg { flex: none; width: 17px; height: 17px; margin-top: 1px; fill: none; stroke: var(--teal); stroke-width: 2; stroke-linecap: round; }
+.since b { color: var(--text); font-weight: 700; }
+.since u { color: var(--text); font-weight: 800; text-decoration-color: var(--teal); text-decoration-thickness: 2px; text-underline-offset: 3px; }
 .tz { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-top: 10px; font-size: 12.5px; color: var(--muted); }
 .tz .seg button { padding: 5px 10px; font-size: 12.5px; }
 /* rising */
@@ -154,6 +158,7 @@ dialog.ch::backdrop { background: rgba(0,0,0,.65); }
   <header>
     <h1>NoPixel <em>time played</em></h1>
     <p>How long every NoPixel V character has been live on stream, in the city. Find any character or streamer.</p>
+    <p class="since" id="since"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.6v.4"/></svg><span><b>Counted since <u>Sep 30, 2026</u></b>, when our records begin, not since NoPixel V opened in early September. Time played before then isn't included.</span></p>
     <p class="meta" id="meta">Loading…</p>
     <div class="tz"><span>Days and times in</span><div class="seg" id="tz" role="group" aria-label="Time zone"><button data-v="et" data-tip="New York time: NoPixel's own (days played are counted in it)">US Eastern</button><button data-v="local" id="tz-local">My time</button></div></div>
   </header>
@@ -172,7 +177,7 @@ dialog.ch::backdrop { background: rgba(0,0,0,.65); }
   <div class="tools">
     <div class="row">
       <label class="search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span class="sr" hidden>Find a character or streamer</span><input id="q" type="search" placeholder="Find a character or streamer" autocomplete="off" spellcheck="false" aria-label="Find a character or streamer"></label>
-      <div class="seg" id="p" role="group" aria-label="When"><button data-v="all">All time</button><button data-v="30d">30 days</button><button data-v="7d">7 days</button><button data-v="24h">24 h</button></div>
+      <div class="seg" id="p" role="group" aria-label="When"><button data-v="all" data-tip="Everything in our records: since Sep 30, 2026">Since Sep 30</button><button data-v="30d">30 days</button><button data-v="7d">7 days</button><button data-v="24h">24 h</button></div>
     </div>
     <div class="row">
       <div class="seg" id="v" role="group" aria-label="Show"><button data-v="chars">Characters</button><button data-v="streamers">Streamers</button></div>
@@ -189,7 +194,7 @@ dialog.ch::backdrop { background: rgba(0,0,0,.65); }
   <dialog class="ch" id="ch" aria-labelledby="ch-name"><div class="ch-in" id="ch-in"></div></dialog>
 
   <footer>
-    <span><b>Time</b>: how long they were live on stream as that character, in the city (other games and just chatting don't count). <b>Days</b>: how many days they played, all time, counted in US Eastern time (one evening is one day). <b>7 / 30 days</b>, <b>24 h</b> and <b>Rising</b> (these 7 days against the 7 before) are rolling, to the hour. <b>Streaming</b>: live on NoPixel; <b>in the city</b>: live as a character in the city.</span>
+    <span><b>Time</b>: how long they were live on stream as that character, in the city (other games and just chatting don't count), <u>since Sep 30, 2026</u>, when our records begin. <b>Days</b>: how many days they played, all time, counted in US Eastern time (one evening is one day). <b>7 / 30 days</b>, <b>24 h</b> and <b>Rising</b> (these 7 days against the 7 before) are rolling, to the hour. <b>Streaming</b>: live on NoPixel; <b>in the city</b>: live as a character in the city.</span>
     <span>Updated every 10 minutes from <a href="https://gtaservers.org/nopixel" rel="noopener">gtaservers.org</a>'s live NoPixel map. By <a href="https://github.com/VoidSector/NoPixel-Map-Companion" rel="noopener">NoPixel Live Map</a>. Unofficial fan project, not affiliated with NoPixel.</span>
   </footer>
 </div>
@@ -248,7 +253,7 @@ function render() {
   $('#s [data-v="avg"]').hidden = st.p !== 'all';
   for (const k of ['p', 'v', 's', 'f']) for (const b of $(`#${k}`).querySelectorAll('[data-v]')) b.setAttribute('aria-pressed', String(b.dataset.v === st[k]));
   const list = rows(), i = PI[st.p];
-  const label = { all: 'all time', '30d': 'the last 30 days', '7d': 'the last 7 days', '24h': 'the last 24 hours' }[st.p];
+  const label = { all: 'since Sep 30', '30d': 'the last 30 days', '7d': 'the last 7 days', '24h': 'the last 24 hours' }[st.p];
   $('#count').textContent = `${list.length.toLocaleString()} ${st.v === 'streamers' ? 'streamers' : 'characters'} · ${label}${st.q ? ` · matching “${st.q}”` : ''}`;
   $('#list').innerHTML = list.slice(0, st.shown).map((r, k) => {
     const tags = `${r.pd ? '<span class="tag pd">police</span>' : ''}${r.live ? '<span class="tag live">live</span>' : ''}`;
@@ -413,8 +418,8 @@ async function openChar(key, { keep = false } = {}) {
   }
   const wk = on[2] - p7;
   $('#ch-in').innerHTML = `<div class="ch-top">${avatar(s)}<div><h2 id="ch-name">${esc(c)}${pd ? '<span class="tag pd">police</span>' : ''}${live.has(s) ? '<span class="tag live">live</span>' : ''}</h2>
-      <small>played by <a data-chpick="${esc(s)}">${esc(s)}</a> · #${rank.toLocaleString()} all time</small></div><button class="ch-x" type="button" aria-label="Close">×</button></div>
-    <div class="ch-stats">${stat(esc(fmt(on[0])), 'all time')}${stat(days.toLocaleString(), `day${days === 1 ? '' : 's'} played`)}${stat(esc(fmt(Math.round(on[0] / Math.max(1, days)))), 'a day they play')}${stat(esc(fmt(on[2])), `this week (${wk >= 1 ? '+' : wk <= -1 ? '−' : '±'}${esc(fmt(Math.round(Math.abs(wk))))})`)}${x?.f ? stat(esc(fmtIn({ day: 'numeric', month: 'short' }).format(x.f * 1000)), 'first seen') : ''}${x?.ls ? stat(live.has(s) ? 'Now' : esc(ago(x.ls)), 'last seen') : ''}</div>
+      <small>played by <a data-chpick="${esc(s)}">${esc(s)}</a> · #${rank.toLocaleString()} since Sep 30</small></div><button class="ch-x" type="button" aria-label="Close">×</button></div>
+    <div class="ch-stats">${stat(esc(fmt(on[0])), 'since Sep 30')}${stat(days.toLocaleString(), `day${days === 1 ? '' : 's'} played`)}${stat(esc(fmt(Math.round(on[0] / Math.max(1, days)))), 'a day they play')}${stat(esc(fmt(on[2])), `this week (${wk >= 1 ? '+' : wk <= -1 ? '−' : '±'}${esc(fmt(Math.round(Math.abs(wk))))})`)}${x?.f ? stat(esc(fmtIn({ day: 'numeric', month: 'short' }).format(x.f * 1000)), x.f - D.since < 86400 ? 'first seen (our records begin)' : 'first seen') : ''}${x?.ls ? stat(live.has(s) ? 'Now' : esc(ago(x.ls)), 'last seen') : ''}</div>
     <section><h3>The last 30 days</h3>${daysHtml}</section>
     ${hoursHtml}
     ${others.length ? `<section><h3>${esc(s)}'s other characters</h3><div class="ch-others">${others.slice(0, 12).map((r) => `<button type="button" data-chopen="${esc(r[0])}|${esc(r[1])}">${esc(r[1])} <small>${esc(fmt(r[4][0]))}</small></button>`).join('')}</div></section>` : ''}`;
@@ -431,8 +436,10 @@ $('#ch').addEventListener('click', (e) => {
 
 // the data is updated every 10 minutes: fetched again every 5 (the list keeps its place)
 function meta() {
-  const since = D.since ? new Date(D.since * 1000).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' }) : null;
-  $('#meta').textContent = `${D.rows.length.toLocaleString()} characters · counted since ${since ?? 'the start'} · updated ${ago(D.made)}`;
+  // when the records begin (said as the day it was in UTC: the first minute was just after midnight there)
+  const since = D.since ? new Date(D.since * 1000).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }) : null;
+  if (since) $('#since u').textContent = since;
+  $('#meta').textContent = `${D.rows.length.toLocaleString()} characters · updated ${ago(D.made)}`;
 }
 function load() {
   return fetch(`leaderboard.json?t=${Math.floor(Date.now() / 60_000)}`, { cache: 'no-cache' }).then((r) => (r.ok ? r.json() : Promise.reject(new Error(r.status)))).then((d) => {
