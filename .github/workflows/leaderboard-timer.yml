@@ -1,5 +1,6 @@
-# The leaderboard's clock: started by each leaderboard run, waits 9 minutes (the wait timer of the
-# "leaderboard-timer" environment: no runner is used while waiting), then starts the next run.
+# The leaderboard's clock: started by each leaderboard run, waits 9 minutes, then starts the next run.
+# (It waits on a runner: the repo is public, so Actions minutes are free. It used to wait on an environment's
+# wait timer, which made a deployment every run: 700+ of them.)
 # One waits at a time, and at most one more queues behind it (newer ones replace it), so two chains
 # (the backstop cron starting one while another is going) merge into one.
 name: Leaderboard timer
@@ -17,9 +18,10 @@ concurrency:
 jobs:
   next:
     runs-on: ubuntu-latest
-    timeout-minutes: 2
-    environment: leaderboard-timer
+    timeout-minutes: 12
     steps:
+      - name: Wait 9 minutes
+        run: sleep 540
       - name: Start the next leaderboard run
         env:
           GH_TOKEN: ${{ github.token }}
