@@ -1,17 +1,15 @@
-# Keeps the time-played leaderboard (https://voidsector.github.io/NoPixel-Map-Companion/) up to date:
-# one look at the live NoPixel feed adds the time since the last look, and the page and its data are
-# published to GitHub Pages. The totals live in the published site (state.json) and, since Pages can serve
-# an old copy for a while after a deploy, in the Actions cache too (the newer of the two is used).
-#
-# Every ~10 minutes: each run starts leaderboard-timer.yml, which waits 9 minutes (its environment's
-# wait timer, no runner meanwhile) and starts the next run. Each run counts; the site is published (a Pages
-# deployment) only once an hour, and at once when the page itself changes (a push). GitHub's own schedule is only "best effort"
-# (often late, sometimes not at all), so the cron below is just the backstop that restarts the chain.
+# Keeps the time-played leaderboard (https://voidsector.github.io/NoPixel-Map-Companion/) up to date.
+# One run an hour: a look at the live NoPixel feed every 10 minutes (6 looks: leaderboard/loop.mjs runs
+# update.mjs), each adding the time since the last look, then the site is published once (one Pages
+# deployment an hour). At its end the run starts the next one. GitHub's own schedule is only "best effort"
+# (often late, sometimes not at all), so the cron below is just the backstop that restarts the chain if a
+# run ever dies without starting the next. The totals live in the published site (state.json) and, since
+# Pages can serve an old copy for a while after a deploy, in the Actions cache too (the newer one is used).
 name: Time played leaderboard
 
 on:
   schedule:
-    - cron: '7,37 * * * *'   # off the round minutes, when GitHub is busiest
+    - cron: '7,37 * * * *'   # the backstop (off the round minutes, when GitHub is busiest)
   workflow_dispatch:
   push:
     branches: [main]
@@ -21,17 +19,17 @@ permissions:
   contents: read
   pages: write
   id-token: write
-  actions: write   # to start the timer
+  actions: write   # to start the next run
 
 concurrency:
   group: leaderboard
   cancel-in-progress: false
 
 jobs:
-  # counting: no environment, so it makes no deployment
+  # counting: an hour of looks (no environment, so it makes no deployment)
   update:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 75
     outputs:
       deploy: ${{ steps.count.outputs.deploy }}
     steps:
@@ -45,13 +43,14 @@ jobs:
           path: lb-state
           key: lb-state-${{ github.run_id }}
           restore-keys: lb-state-
-      - name: Count the time since the last look
+      - name: A look every 10 minutes for an hour
         id: count
-        run: node leaderboard/update.mjs site
+        run: node leaderboard/loop.mjs site
         env:
           LB_CACHED_STATE: lb-state/state.json
-          LB_FORCE_DEPLOY: ${{ github.event_name == 'push' && '1' || '' }}
+          LB_LOOKS: ${{ github.event_name == 'push' && '1' || '6' }}   # (a change to the page: published at once)
       - name: Keep the totals for the next run
+        if: always()
         uses: actions/cache/save@v4
         with:
           path: lb-state
@@ -60,12 +59,12 @@ jobs:
         if: steps.count.outputs.deploy == 'true'
         with:
           path: site
-      - name: Start the timer for the next run
+      - name: Start the next run
         if: always()
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh workflow run leaderboard-timer.yml -R "$GITHUB_REPOSITORY"
-  # publishing: once an hour (and when the page changes)
+        run: gh workflow run leaderboard.yml -R "$GITHUB_REPOSITORY"
+  # publishing: once, at the end of the hour
   deploy:
     needs: update
     if: needs.update.outputs.deploy == 'true'

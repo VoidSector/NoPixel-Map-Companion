@@ -10,7 +10,7 @@
 // lost the looks in between. The first run starts from seed.json.
 //
 // Usage: node leaderboard/update.mjs <out dir>   (writes index.html, leaderboard.json, details.json, state.json)
-import { readFile, writeFile, mkdir, copyFile, appendFile } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, copyFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { pickCharacter, setCurrentCharacter } from './character.mjs';
@@ -293,13 +293,6 @@ await mkdir(OUT, { recursive: true });
 await copyFile(new URL('index.html', HERE), new URL('index.html', OUT));
 await writeFile(new URL('leaderboard.json', OUT), JSON.stringify(data));
 await writeFile(new URL('details.json', OUT), JSON.stringify(details));
-// Publish (a GitHub Pages deployment) once an hour, not every run: the totals carry on in the run's own copy
-// (the Actions cache) meanwhile. A change to the page itself is published at once (the workflow: on push).
-const DEPLOY_EVERY_S = 3600 - 300; // (the runs come every ~10 minutes: the first one an hour or so on)
-const deploy = !state.deployedAt || now - state.deployedAt >= DEPLOY_EVERY_S || !!process.env.LB_FORCE_DEPLOY;
-if (deploy) state.deployedAt = now;
-if (process.env.GITHUB_OUTPUT) await appendFile(process.env.GITHUB_OUTPUT, `deploy=${deploy}\n`);
-console.log(deploy ? 'Publishing this run' : `Not publishing (last published ${Math.round((now - state.deployedAt) / 60)} min ago)`);
 await writeFile(new URL('state.json', OUT), JSON.stringify(state));
 // (and the run's own copy for the next run: the workflow keeps it in the Actions cache)
 if (process.env.LB_CACHED_STATE) { const f = resolve(process.env.LB_CACHED_STATE); await mkdir(resolve(f, '..'), { recursive: true }); await writeFile(f, JSON.stringify(state)); }
