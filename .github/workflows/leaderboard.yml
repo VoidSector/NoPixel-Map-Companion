@@ -4,7 +4,8 @@
 # an old copy for a while after a deploy, in the Actions cache too (the newer of the two is used).
 #
 # Every ~10 minutes: each run starts leaderboard-timer.yml, which waits 9 minutes (its environment's
-# wait timer, no runner meanwhile) and starts the next run. GitHub's own schedule is only "best effort"
+# wait timer, no runner meanwhile) and starts the next run. Each run counts; the site is published (a Pages
+# deployment) only once an hour, and at once when the page itself changes (a push). GitHub's own schedule is only "best effort"
 # (often late, sometimes not at all), so the cron below is just the backstop that restarts the chain.
 name: Time played leaderboard
 
@@ -27,12 +28,12 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # counting: no environment, so it makes no deployment
   update:
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
+    outputs:
+      deploy: ${{ steps.count.outputs.deploy }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -45,21 +46,34 @@ jobs:
           key: lb-state-${{ github.run_id }}
           restore-keys: lb-state-
       - name: Count the time since the last look
+        id: count
         run: node leaderboard/update.mjs site
         env:
           LB_CACHED_STATE: lb-state/state.json
+          LB_FORCE_DEPLOY: ${{ github.event_name == 'push' && '1' || '' }}
       - name: Keep the totals for the next run
         uses: actions/cache/save@v4
         with:
           path: lb-state
           key: lb-state-${{ github.run_id }}
       - uses: actions/upload-pages-artifact@v3
+        if: steps.count.outputs.deploy == 'true'
         with:
           path: site
-      - id: deploy
-        uses: actions/deploy-pages@v4
       - name: Start the timer for the next run
         if: always()
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh workflow run leaderboard-timer.yml -R "$GITHUB_REPOSITORY"
+  # publishing: once an hour (and when the page changes)
+  deploy:
+    needs: update
+    if: needs.update.outputs.deploy == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4
