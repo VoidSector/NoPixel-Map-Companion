@@ -5,7 +5,9 @@
 // whether they're in the city (the feed placed them on the map in the last 2 hours). Someone live as the
 // same character at this look and the last one gets the time in between; someone who started or stopped
 // in between gets half of it (at most 15 minutes). The running totals (state.json) come from the
-// published site itself, so nothing else has to be kept anywhere; the first run starts from seed.json.
+// published site and from the last run's own copy (GitHub's Actions cache), whichever is newer: Pages
+// sometimes serves the previous state.json for up to half an hour after a deploy, and a run building on that
+// lost the looks in between. The first run starts from seed.json.
 //
 // Usage: node leaderboard/update.mjs <out dir>   (writes index.html, leaderboard.json, details.json, state.json)
 import { readFile, writeFile, mkdir, copyFile } from 'node:fs/promises';
@@ -57,9 +59,18 @@ function shortForms(list) {
 // ---- the totals so far: from the published site (a network failure stops the run: never start over) ----
 async function loadState() {
   if (process.env.LB_STATE) return JSON.parse(await readFile(process.env.LB_STATE, 'utf8')); // testing: a state file
+  // the last run's own copy (restored from the Actions cache by the workflow), if there is one
+  let cached = null;
+  if (process.env.LB_CACHED_STATE) try { cached = JSON.parse(await readFile(process.env.LB_CACHED_STATE, 'utf8')); } catch { /* none yet */ }
   const r = await fetch(`${SITE}state.json?t=${now}`, { headers: { 'cache-control': 'no-cache' }, signal: AbortSignal.timeout(30_000) });
-  if (r.ok) return r.json();
-  if (r.status !== 404) throw new Error(`state.json: HTTP ${r.status}`);
+  let published = null;
+  if (r.ok) published = await r.json();
+  else if (r.status !== 404) { if (!cached) throw new Error(`state.json: HTTP ${r.status}`); }
+  if (cached && (!published || (cached.at ?? 0) > (published.at ?? 0))) {
+    if (published) console.log(`The published state is ${Math.round(((cached.at ?? 0) - (published.at ?? 0)) / 60)} min behind: using the last run's own copy`);
+    return cached;
+  }
+  if (published) return published;
   console.log('No published state yet: starting from seed.json');
   return JSON.parse(await readFile(new URL('seed.json', HERE), 'utf8'));
 }
@@ -283,5 +294,7 @@ await copyFile(new URL('index.html', HERE), new URL('index.html', OUT));
 await writeFile(new URL('leaderboard.json', OUT), JSON.stringify(data));
 await writeFile(new URL('details.json', OUT), JSON.stringify(details));
 await writeFile(new URL('state.json', OUT), JSON.stringify(state));
+// (and the run's own copy for the next run: the workflow keeps it in the Actions cache)
+if (process.env.LB_CACHED_STATE) { const f = resolve(process.env.LB_CACHED_STATE); await mkdir(resolve(f, '..'), { recursive: true }); await writeFile(f, JSON.stringify(state)); }
 await writeFile(new URL('.nojekyll', OUT), '');
 console.log(`${roster.length} live, ${data.live.length} in the city; ${data.rows.length} characters; ${Math.round(gap / 60)} min since the last look${before ? '' : ' (first run)'}`);

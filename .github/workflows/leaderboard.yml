@@ -1,6 +1,7 @@
 # Keeps the time-played leaderboard (https://voidsector.github.io/NoPixel-Map-Companion/) up to date:
 # one look at the live NoPixel feed adds the time since the last look, and the page and its data are
-# published to GitHub Pages. The totals live in the published site (state.json).
+# published to GitHub Pages. The totals live in the published site (state.json) and, since Pages can serve
+# an old copy for a while after a deploy, in the Actions cache too (the newer of the two is used).
 #
 # Every ~10 minutes: each run starts leaderboard-timer.yml, which waits 9 minutes (its environment's
 # wait timer, no runner meanwhile) and starts the next run. GitHub's own schedule is only "best effort"
@@ -37,8 +38,21 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: The totals from the last run (there at once, unlike the published site)
+        uses: actions/cache/restore@v4
+        with:
+          path: lb-state
+          key: lb-state-${{ github.run_id }}
+          restore-keys: lb-state-
       - name: Count the time since the last look
         run: node leaderboard/update.mjs site
+        env:
+          LB_CACHED_STATE: lb-state/state.json
+      - name: Keep the totals for the next run
+        uses: actions/cache/save@v4
+        with:
+          path: lb-state
+          key: lb-state-${{ github.run_id }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site
